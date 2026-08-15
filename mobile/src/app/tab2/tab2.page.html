@@ -1,0 +1,84 @@
+<ion-header [translucent]="true">
+  <ion-toolbar color="primary">
+    <ion-title>Inventario</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content [fullscreen]="true">
+  @if (!active) {
+    <div class="ion-padding">
+      <ion-button expand="block" (click)="newCount()">
+        <ion-icon name="add-circle-outline" slot="start"></ion-icon>
+        Nuevo conteo de inventario
+      </ion-button>
+    </div>
+    <ion-list>
+      <ion-item lines="none"><ion-label><strong>Conteos anteriores</strong></ion-label></ion-item>
+      @for (c of counts; track c.id) {
+        <ion-item button (click)="c.status === 'ABIERTO' ? open(c.id) : null">
+          <ion-label>
+            <h2>{{ c.createdAt | date: 'dd/MM/yyyy HH:mm' }}</h2>
+            <p>{{ c.note ?? 'Sin nota' }} · {{ c._count?.items ?? 0 }} productos</p>
+          </ion-label>
+          <ion-badge slot="end" [color]="c.status === 'ABIERTO' ? 'success' : 'medium'">{{ c.status }}</ion-badge>
+        </ion-item>
+      }
+    </ion-list>
+  } @else {
+    <div class="ion-padding">
+      <ion-input
+        [(ngModel)]="code"
+        (keydown.enter)="scan()"
+        placeholder="Escanear o escribir código…"
+        inputmode="numeric"
+        class="scan-input"
+        fill="outline"
+      ></ion-input>
+
+      <div class="scan-buttons">
+        <ion-button (click)="scan()">
+          <ion-icon name="barcode-outline" slot="start"></ion-icon>Registrar
+        </ion-button>
+        @if (!scanning) {
+          <ion-button color="secondary" (click)="startCamera()">
+            <ion-icon name="camera-outline" slot="start"></ion-icon>Cámara
+          </ion-button>
+        } @else {
+          <ion-button color="danger" (click)="stopCamera()">
+            <ion-icon name="stop-circle-outline" slot="start"></ion-icon>Detener
+          </ion-button>
+        }
+      </div>
+
+      @if (scanning) {
+        <video #video class="scan-video" muted playsinline></video>
+      }
+
+      @if (lastScanned) { <ion-note>Último: {{ lastScanned }}</ion-note> }
+    </div>
+
+    <ion-list>
+      @for (i of active.items ?? []; track i.id) {
+        <ion-item>
+          <ion-label>
+            <h2>{{ i.product?.name ?? i.barcode }}</h2>
+            <p>Esperado: {{ i.expected }} · Contado: {{ i.counted }}</p>
+          </ion-label>
+          <ion-badge slot="end" [color]="diff(i.expected, i.counted) === 0 ? 'success' : (diff(i.expected, i.counted) < 0 ? 'danger' : 'warning')">
+            {{ diff(i.expected, i.counted) > 0 ? '+' : '' }}{{ diff(i.expected, i.counted) }}
+          </ion-badge>
+        </ion-item>
+      } @empty {
+        <ion-item lines="none"><ion-label class="ion-text-center" color="medium">Escanea el primer producto</ion-label></ion-item>
+      }
+    </ion-list>
+
+    <div class="ion-padding">
+      <ion-button expand="block" color="success" (click)="closeCount(true)">
+        <ion-icon name="checkmark-done-outline" slot="start"></ion-icon>
+        Cerrar y ajustar stock
+      </ion-button>
+      <ion-button expand="block" fill="outline" (click)="closeCount(false)">Cerrar sin ajustar</ion-button>
+    </div>
+  }
+</ion-content>

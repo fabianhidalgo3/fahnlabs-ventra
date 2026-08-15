@@ -1,0 +1,49 @@
+<ion-header [translucent]="true">
+  <ion-toolbar color="primary">
+    <ion-title>Ventra — Hoy</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content [fullscreen]="true">
+  <ion-refresher slot="fixed" (ionRefresh)="load($any($event))">
+    <ion-refresher-content></ion-refresher-content>
+  </ion-refresher>
+
+  @if (error) {
+    <ion-card color="danger"><ion-card-content>{{ error }}</ion-card-content></ion-card>
+  }
+
+  @if (summary) {
+    <div class="kpi-grid">
+      <ion-card>
+        <ion-card-header><ion-card-title class="kpi-label">Ventas</ion-card-title></ion-card-header>
+        <ion-card-content class="kpi-value">{{ summary.totals.ventas }}</ion-card-content>
+      </ion-card>
+      <ion-card>
+        <ion-card-header><ion-card-title class="kpi-label">Total</ion-card-title></ion-card-header>
+        <ion-card-content class="kpi-value">{{ clp(summary.totals.total) }}</ion-card-content>
+      </ion-card>
+      <ion-card>
+        <ion-card-header><ion-card-title class="kpi-label">Neto</ion-card-title></ion-card-header>
+        <ion-card-content class="kpi-value">{{ clp(summary.totals.neto) }}</ion-card-content>
+      </ion-card>
+      <ion-card>
+        <ion-card-header><ion-card-title class="kpi-label">IVA</ion-card-title></ion-card-header>
+        <ion-card-content class="kpi-value">{{ clp(summary.totals.iva) }}</ion-card-content>
+      </ion-card>
+    </div>
+
+    <ion-list>
+      <ion-item lines="none"><ion-label><strong>Últimas ventas</strong></ion-label></ion-item>
+      @for (s of summary.lastSales ?? []; track s.id) {
+        <ion-item>
+          <ion-label>
+            <h2>Venta N° {{ s.number }} — {{ clp(s.total) }}</h2>
+            <p>{{ s.createdAt | date: 'dd/MM HH:mm' }} · {{ s.items.length }} ítems · {{ s.payment }}</p>
+          </ion-label>
+          @if (s.boleta) { <ion-badge slot="end">Folio {{ s.boleta.folio }}</ion-badge> }
+        </ion-item>
+      }
+    </ion-list>
+  }
+</ion-content>

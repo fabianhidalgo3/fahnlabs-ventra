@@ -1,0 +1,140 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Category {
+  id        String    @id @default(uuid())
+  name      String    @unique
+  products  Product[]
+  createdAt DateTime  @default(now())
+}
+
+model Product {
+  id          String         @id @default(uuid())
+  sku         String         @unique
+  barcode     String         @unique
+  name        String
+  description String?
+  price       Decimal        @db.Decimal(12, 2)
+  cost        Decimal?       @db.Decimal(12, 2)
+  stock       Int            @default(0)
+  minStock    Int            @default(0)
+  imageUrl    String?
+  active      Boolean        @default(true)
+  category    Category?      @relation(fields: [categoryId], references: [id])
+  categoryId  String?
+  batches     ProductBatch[]
+  saleItems   SaleItem[]
+  priceLogs   PriceLog[]
+  countItems  InventoryCountItem[]
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  @@index([name])
+}
+
+model ProductBatch {
+  id         String   @id @default(uuid())
+  product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  productId  String
+  lotCode    String
+  quantity   Int
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+
+  @@index([expiresAt])
+}
+
+model PriceLog {
+  id        String   @id @default(uuid())
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  productId String
+  oldPrice  Decimal  @db.Decimal(12, 2)
+  newPrice  Decimal  @db.Decimal(12, 2)
+  reason    String?
+  createdAt DateTime @default(now())
+}
+
+model Sale {
+  id         String     @id @default(uuid())
+  number     Int        @unique @default(autoincrement())
+  items      SaleItem[]
+  subtotal   Decimal    @db.Decimal(12, 2)
+  tax        Decimal    @db.Decimal(12, 2)
+  total      Decimal    @db.Decimal(12, 2)
+  payment    Payment    @default(EFECTIVO)
+  boleta     Boleta?
+  createdAt  DateTime   @default(now())
+
+  @@index([createdAt])
+}
+
+model SaleItem {
+  id        String  @id @default(uuid())
+  sale      Sale    @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  saleId    String
+  product   Product @relation(fields: [productId], references: [id])
+  productId String
+  quantity  Int
+  unitPrice Decimal @db.Decimal(12, 2)
+  total     Decimal @db.Decimal(12, 2)
+}
+
+model Boleta {
+  id        String       @id @default(uuid())
+  sale      Sale         @relation(fields: [saleId], references: [id])
+  saleId    String       @unique
+  folio     Int          @unique @default(autoincrement())
+  tipoDte   Int          @default(39)
+  status    BoletaStatus @default(EMITIDA)
+  provider  String       @default("simulado")
+  pdfPath   String?
+  rawXml    String?
+  createdAt DateTime     @default(now())
+}
+
+model InventoryCount {
+  id        String               @id @default(uuid())
+  note      String?
+  status    InventoryCountStatus @default(ABIERTO)
+  items     InventoryCountItem[]
+  createdAt DateTime             @default(now())
+  closedAt  DateTime?
+}
+
+model InventoryCountItem {
+  id         String         @id @default(uuid())
+  count      InventoryCount @relation(fields: [countId], references: [id], onDelete: Cascade)
+  countId    String
+  product    Product        @relation(fields: [productId], references: [id])
+  productId  String
+  barcode    String
+  expected   Int
+  counted    Int
+  createdAt  DateTime       @default(now())
+
+  @@unique([countId, productId])
+}
+
+enum Payment {
+  EFECTIVO
+  DEBITO
+  CREDITO
+  TRANSFERENCIA
+}
+
+enum BoletaStatus {
+  EMITIDA
+  ANULADA
+  ERROR
+}
+
+enum InventoryCountStatus {
+  ABIERTO
+  CERRADO
+}

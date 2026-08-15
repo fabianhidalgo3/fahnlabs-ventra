@@ -1,0 +1,9 @@
+node_modules/
+dist/
+www/
+.angular/
+uploads/
+.env
+graphify-out/
+.DS_Store
+*.log
