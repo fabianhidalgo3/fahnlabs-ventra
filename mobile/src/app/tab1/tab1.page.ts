@@ -3,8 +3,12 @@ import { CommonModule } from '@angular/common';
 import {
   IonHeader, IonToolbar, IonTitle, IonContent, IonRefresher, IonRefresherContent,
   IonCard, IonCardHeader, IonCardTitle, IonCardContent, IonList, IonItem, IonLabel, IonBadge,
+  IonButtons, IonButton, IonIcon,
 } from '@ionic/angular/standalone';
+import { addIcons } from 'ionicons';
+import { logOutOutline } from 'ionicons/icons';
 import { ApiService, Summary } from '../core/api.service';
+import { AuthService } from '../core/auth.service';
 
 @Component({
   selector: 'app-tab1',
@@ -13,13 +17,23 @@ import { ApiService, Summary } from '../core/api.service';
   imports: [
     CommonModule, IonHeader, IonToolbar, IonTitle, IonContent, IonRefresher, IonRefresherContent,
     IonCard, IonCardHeader, IonCardTitle, IonCardContent, IonList, IonItem, IonLabel, IonBadge,
+    IonButtons, IonButton, IonIcon,
   ],
 })
 export class Tab1Page {
   summary?: Summary;
   error = '';
 
-  constructor(private api: ApiService) {}
+  constructor(
+    private api: ApiService,
+    private auth: AuthService,
+  ) {
+    addIcons({ logOutOutline });
+  }
+
+  logout() {
+    this.auth.logout();
+  }
 
   ionViewWillEnter() {
     this.load();

@@ -5,6 +5,7 @@ import { NavigationEnd, Router, RouterModule } from '@angular/router';
 import { SafeHtmlPipe } from '../../pipe/safe-html.pipe';
 import { SidebarWidgetComponent } from './app-sidebar-widget.component';
 import { combineLatest, Subscription } from 'rxjs';
+import { AuthService } from '../../../core/auth.service';
 
 type NavItem = {
   name: string;
@@ -70,8 +71,18 @@ export class AppSidebarComponent {
   constructor(
     public sidebarService: SidebarService,
     private router: Router,
-    private cdr: ChangeDetectorRef
+    private cdr: ChangeDetectorRef,
+    private auth: AuthService
   ) {
+    if (this.auth.isAdmin) {
+      this.navItems.push({
+        icon: `<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" clip-rule="evenodd" d="M12 4C9.79 4 8 5.79 8 8C8 10.21 9.79 12 12 12C14.21 12 16 10.21 16 8C16 5.79 14.21 4 12 4ZM10 8C10 6.9 10.9 6 12 6C13.1 6 14 6.9 14 8C14 9.1 13.1 10 12 10C10.9 10 10 9.1 10 8ZM12 13.5C9.33 13.5 4 14.84 4 17.5V20H20V17.5C20 14.84 14.67 13.5 12 13.5ZM6 17.5C6.22 16.78 9.31 15.5 12 15.5C14.7 15.5 17.8 16.79 18 17.5V18H6V17.5Z" fill="currentColor"></path></svg>`,
+        name: "Usuarios",
+        path: "/usuarios",
+      });
+    } else {
+      this.navItems = this.navItems.filter((i) => i.name !== 'Reportes');
+    }
     this.isExpanded$ = this.sidebarService.isExpanded$;
     this.isMobileOpen$ = this.sidebarService.isMobileOpen$;
     this.isHovered$ = this.sidebarService.isHovered$;

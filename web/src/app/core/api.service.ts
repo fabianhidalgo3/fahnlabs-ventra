@@ -115,11 +115,15 @@ export class ApiService {
   createCategory(name: string) {
     return this.http.post<Category>(`${API_URL}/products/categories`, { name });
   }
+  private get tokenParam() {
+    const t = localStorage.getItem('ventra_token');
+    return t ? `token=${t}` : '';
+  }
   barcodeUrl(id: string) {
-    return `${API_URL}/products/${id}/barcode.png`;
+    return `${API_URL}/products/${id}/barcode.png?${this.tokenParam}`;
   }
   qrUrl(id: string) {
-    return `${API_URL}/products/${id}/qr.png`;
+    return `${API_URL}/products/${id}/qr.png?${this.tokenParam}`;
   }
 
   // Lotes / vencimientos
@@ -153,7 +157,7 @@ export class ApiService {
     });
   }
   exportUrl(kind: 'xlsx' | 'pdf', from: string, to: string) {
-    return `${API_URL}/reports/export.${kind}?from=${from}&to=${to}`;
+    return `${API_URL}/reports/export.${kind}?from=${from}&to=${to}&${this.tokenParam}`;
   }
   fileUrl(path?: string) {
     return path ? `${FILES_URL}${path}` : '';

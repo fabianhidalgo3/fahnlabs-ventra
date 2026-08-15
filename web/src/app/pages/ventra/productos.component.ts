@@ -2,6 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ApiService, Product, Category } from '../../core/api.service';
+import { AuthService } from '../../core/auth.service';
 
 @Component({
   selector: 'app-ventra-productos',
@@ -11,8 +12,10 @@ import { ApiService, Product, Category } from '../../core/api.service';
     <div class="mb-4 flex flex-wrap items-center gap-3">
       <input [(ngModel)]="search" (input)="load()" placeholder="Buscar por nombre, SKU o código…"
         class="h-11 w-72 rounded-lg border border-gray-300 bg-transparent px-4 text-sm text-gray-800 placeholder:text-gray-400 focus:border-brand-300 focus:outline-none dark:border-gray-700 dark:text-white/90" />
-      <button (click)="openForm()" class="h-11 rounded-lg bg-brand-500 px-4 text-sm font-medium text-white hover:bg-brand-600">+ Nuevo producto</button>
-      <button (click)="showBulk = !showBulk" class="h-11 rounded-lg border border-gray-300 px-4 text-sm font-medium text-gray-700 dark:border-gray-700 dark:text-gray-300">Precios masivos</button>
+      @if (auth.isAdmin) {
+        <button (click)="openForm()" class="h-11 rounded-lg bg-brand-500 px-4 text-sm font-medium text-white hover:bg-brand-600">+ Nuevo producto</button>
+        <button (click)="showBulk = !showBulk" class="h-11 rounded-lg border border-gray-300 px-4 text-sm font-medium text-gray-700 dark:border-gray-700 dark:text-gray-300">Precios masivos</button>
+      }
       <span class="text-sm text-gray-400">{{ products.length }} productos</span>
     </div>
 
@@ -103,10 +106,14 @@ import { ApiService, Product, Category } from '../../core/api.service';
               </td>
               <td class="px-5 py-3">
                 <div class="flex gap-2 text-xs">
-                  <button (click)="openForm(p)" class="rounded border border-gray-300 px-2 py-1 dark:border-gray-700 dark:text-gray-300">Editar</button>
+                  @if (auth.isAdmin) {
+                    <button (click)="openForm(p)" class="rounded border border-gray-300 px-2 py-1 dark:border-gray-700 dark:text-gray-300">Editar</button>
+                  }
                   <a [href]="api.barcodeUrl(p.id)" target="_blank" class="rounded border border-gray-300 px-2 py-1 dark:border-gray-700 dark:text-gray-300">Barras</a>
                   <a [href]="api.qrUrl(p.id)" target="_blank" class="rounded border border-gray-300 px-2 py-1 dark:border-gray-700 dark:text-gray-300">QR</a>
-                  <button (click)="remove(p)" class="rounded border border-error-300 px-2 py-1 text-error-600">Eliminar</button>
+                  @if (auth.isAdmin) {
+                    <button (click)="remove(p)" class="rounded border border-error-300 px-2 py-1 text-error-600">Eliminar</button>
+                  }
                 </div>
               </td>
             </tr>
@@ -129,7 +136,10 @@ export class VentraProductosComponent implements OnInit {
   bulkMsg = '';
   form: Partial<Product> = {};
 
-  constructor(public api: ApiService) {}
+  constructor(
+    public api: ApiService,
+    public auth: AuthService,
+  ) {}
 
   clp(n: number) {
     return '$' + Math.round(Number(n)).toLocaleString('es-CL');

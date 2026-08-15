@@ -1,18 +1,20 @@
 import { Routes } from '@angular/router';
 import { AppLayoutComponent } from './shared/layout/app-layout/app-layout.component';
 import { NotFoundComponent } from './pages/other-page/not-found/not-found.component';
-import { SignInComponent } from './pages/auth-pages/sign-in/sign-in.component';
-import { SignUpComponent } from './pages/auth-pages/sign-up/sign-up.component';
 import { VentraDashboardComponent } from './pages/ventra/dashboard.component';
 import { VentraProductosComponent } from './pages/ventra/productos.component';
 import { VentraPosComponent } from './pages/ventra/pos.component';
 import { VentraVencimientosComponent } from './pages/ventra/vencimientos.component';
 import { VentraReportesComponent } from './pages/ventra/reportes.component';
+import { VentraUsuariosComponent } from './pages/ventra/usuarios.component';
+import { VentraLoginComponent } from './pages/ventra/login.component';
+import { authGuard, adminGuard } from './core/auth.service';
 
 export const routes: Routes = [
   {
     path: '',
     component: AppLayoutComponent,
+    canActivate: [authGuard],
     children: [
       {
         path: '',
@@ -38,19 +40,21 @@ export const routes: Routes = [
       {
         path: 'reportes',
         component: VentraReportesComponent,
+        canActivate: [adminGuard],
         title: 'Reportes | Ventra by FHAN Labs',
+      },
+      {
+        path: 'usuarios',
+        component: VentraUsuariosComponent,
+        canActivate: [adminGuard],
+        title: 'Usuarios | Ventra by FHAN Labs',
       },
     ],
   },
   {
     path: 'signin',
-    component: SignInComponent,
+    component: VentraLoginComponent,
     title: 'Iniciar sesión | Ventra by FHAN Labs',
-  },
-  {
-    path: 'signup',
-    component: SignUpComponent,
-    title: 'Crear cuenta | Ventra by FHAN Labs',
   },
   {
     path: '**',

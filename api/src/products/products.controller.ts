@@ -15,6 +15,7 @@ import {
 import { FileInterceptor } from '@nestjs/platform-express';
 import type { Response } from 'express';
 import { ProductsService } from './products.service';
+import { Roles } from '../auth/auth.decorators';
 import { CreateProductDto, UpdateProductDto, BulkPercentDto } from './dto';
 import * as bwipjs from 'bwip-js';
 import * as QRCode from 'qrcode';
@@ -42,6 +43,7 @@ export class ProductsController {
     return this.service.listCategories();
   }
 
+  @Roles('ADMIN')
   @Post('categories')
   createCategory(@Body('name') name: string) {
     if (!name?.trim()) throw new BadRequestException('name requerido');
@@ -58,26 +60,31 @@ export class ProductsController {
     return this.service.get(id);
   }
 
+  @Roles('ADMIN')
   @Post()
   create(@Body() dto: CreateProductDto) {
     return this.service.create(dto);
   }
 
+  @Roles('ADMIN')
   @Patch(':id')
   update(@Param('id') id: string, @Body() dto: UpdateProductDto) {
     return this.service.update(id, dto);
   }
 
+  @Roles('ADMIN')
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.service.remove(id);
   }
 
+  @Roles('ADMIN')
   @Post('price-bulk')
   bulkPercent(@Body() dto: BulkPercentDto) {
     return this.service.bulkPercent(dto);
   }
 
+  @Roles('ADMIN')
   @Post('price-import')
   @UseInterceptors(FileInterceptor('file'))
   bulkImport(@UploadedFile() file: Express.Multer.File) {
@@ -85,6 +92,7 @@ export class ProductsController {
     return this.service.bulkImport(file.buffer, file.originalname);
   }
 
+  @Roles('ADMIN')
   @Post(':id/image')
   @UseInterceptors(FileInterceptor('file'))
   async uploadImage(

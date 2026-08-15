@@ -8,6 +8,7 @@ import {
   Query,
 } from '@nestjs/common';
 import { BatchesService } from './batches.service';
+import { Roles } from '../auth/auth.decorators';
 
 @Controller('batches')
 export class BatchesController {
@@ -23,6 +24,7 @@ export class BatchesController {
     return this.service.listByProduct(productId);
   }
 
+  @Roles('ADMIN')
   @Post()
   create(
     @Body()
@@ -36,6 +38,7 @@ export class BatchesController {
     return this.service.create(body);
   }
 
+  @Roles('ADMIN')
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.service.remove(id);

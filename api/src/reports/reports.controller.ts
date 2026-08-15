@@ -2,6 +2,7 @@ import { Controller, Get, Query, Res } from '@nestjs/common';
 import type { Response } from 'express';
 import { ReportsService } from './reports.service';
 import type { GroupBy } from './reports.service';
+import { Roles } from '../auth/auth.decorators';
 
 @Controller('reports')
 export class ReportsController {
@@ -21,6 +22,7 @@ export class ReportsController {
     return this.service.summary(from, to, groupBy ?? 'day');
   }
 
+  @Roles('ADMIN')
   @Get('export.xlsx')
   async xlsx(
     @Res() res: Response,
@@ -39,6 +41,7 @@ export class ReportsController {
     res.send(buf);
   }
 
+  @Roles('ADMIN')
   @Get('export.pdf')
   async pdf(
     @Res() res: Response,

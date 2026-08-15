@@ -1,4 +1,5 @@
 import { Component } from '@angular/core';
+import { AuthService } from '../../../../core/auth.service';
 import { DropdownComponent } from '../../ui/dropdown/dropdown.component';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
@@ -11,6 +12,13 @@ import { DropdownItemTwoComponent } from '../../ui/dropdown/dropdown-item/dropdo
 })
 export class UserDropdownComponent {
   isOpen = false;
+
+  constructor(public auth: AuthService) {}
+
+  logout() {
+    this.closeDropdown();
+    this.auth.logout();
+  }
 
   toggleDropdown() {
     this.isOpen = !this.isOpen;
