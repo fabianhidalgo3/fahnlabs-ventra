@@ -5,10 +5,12 @@ import { RouterModule } from '@angular/router';
 import { ThemeToggleButtonComponent } from '../../components/common/theme-toggle/theme-toggle-button.component';
 import { NotificationDropdownComponent } from '../../components/header/notification-dropdown/notification-dropdown.component';
 import { UserDropdownComponent } from '../../components/header/user-dropdown/user-dropdown.component';
+import { ProductSearchComponent } from '../../components/ventra/product-search.component';
 
 @Component({
   selector: 'app-header',
   imports: [
+    ProductSearchComponent,
     CommonModule,
     RouterModule,
     ThemeToggleButtonComponent,
@@ -21,7 +23,7 @@ export class AppHeaderComponent {
   isApplicationMenuOpen = false;
   readonly isMobileOpen$;
 
-  @ViewChild('searchInput') searchInput!: ElementRef<HTMLInputElement>;
+  @ViewChild('searchInput') searchInput!: ProductSearchComponent;
 
   constructor(public sidebarService: SidebarService) {
     this.isMobileOpen$ = this.sidebarService.isMobileOpen$;

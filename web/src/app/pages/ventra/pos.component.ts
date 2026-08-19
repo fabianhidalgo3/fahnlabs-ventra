@@ -1,7 +1,9 @@
-import { Component, ElementRef, OnInit, ViewChild } from '@angular/core';
+import { Component, ElementRef, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Subscription } from 'rxjs';
 import { ApiService, Product, Sale } from '../../core/api.service';
+import { PosBusService } from '../../core/pos-bus.service';
 
 interface CartLine {
   product: Product;
@@ -90,18 +92,36 @@ interface CartLine {
     </div>
   `,
 })
-export class VentraPosComponent implements OnInit {
+export class VentraPosComponent implements OnInit, OnDestroy {
   cart: CartLine[] = [];
   scanCode = '';
   payment = 'EFECTIVO';
   error = '';
   saving = false;
   lastSale?: Sale;
+  private busSub?: Subscription;
   @ViewChild('scanInput') scanInput?: ElementRef<HTMLInputElement>;
 
-  constructor(public api: ApiService) {}
+  constructor(
+    public api: ApiService,
+    private posBus: PosBusService,
+  ) {}
 
-  ngOnInit() {}
+  ngOnInit() {
+    // Productos elegidos desde el buscador global del header
+    this.busSub = this.posBus.add$.subscribe((p) => this.addProduct(p));
+  }
+
+  ngOnDestroy() {
+    this.busSub?.unsubscribe();
+  }
+
+  addProduct(p: Product) {
+    const existing = this.cart.find((l) => l.product.id === p.id);
+    if (existing) existing.quantity++;
+    else this.cart.push({ product: p, quantity: 1 });
+    this.error = '';
+  }
 
   clp(n: number) {
     return '$' + Math.round(Number(n)).toLocaleString('es-CL');
@@ -120,9 +140,7 @@ export class VentraPosComponent implements OnInit {
     this.error = '';
     this.api.byBarcode(code).subscribe({
       next: (p) => {
-        const existing = this.cart.find((l) => l.product.id === p.id);
-        if (existing) existing.quantity++;
-        else this.cart.push({ product: p, quantity: 1 });
+        this.addProduct(p);
         this.scanCode = '';
         this.scanInput?.nativeElement.focus();
       },

@@ -66,18 +66,19 @@ import { AuthService } from '../../core/auth.service';
       </div>
     }
 
-    <div class="rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03] overflow-x-auto">
-      <table class="w-full text-sm">
-        <thead>
-          <tr class="border-b border-gray-100 text-left text-gray-500 dark:border-gray-800 dark:text-gray-400">
-            <th class="px-5 py-3">Producto</th><th class="px-5 py-3">SKU / Código</th><th class="px-5 py-3 text-right">Precio</th>
+    <div class="rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900 max-h-[70vh] overflow-auto">
+      <table class="w-full min-w-[900px] text-sm">
+        <thead class="sticky top-0 z-10">
+          <tr class="border-b border-gray-100 bg-white text-left text-gray-500 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-400">
+            <th class="sticky left-0 z-20 bg-white px-5 py-3 dark:bg-gray-900">Producto</th>
+            <th class="px-5 py-3">SKU / Código</th><th class="px-5 py-3 text-right">Precio</th>
             <th class="px-5 py-3 text-right">Stock</th><th class="px-5 py-3">Vencimiento</th><th class="px-5 py-3">Acciones</th>
           </tr>
         </thead>
         <tbody>
           @for (p of products; track p.id) {
-            <tr class="border-b border-gray-50 dark:border-gray-800/50">
-              <td class="px-5 py-3">
+            <tr class="group border-b border-gray-50 hover:bg-gray-50 dark:border-gray-800/50 dark:hover:bg-white/[0.03]">
+              <td class="sticky left-0 z-[5] bg-white px-5 py-3 group-hover:bg-gray-50 dark:bg-gray-900 dark:group-hover:bg-gray-800">
                 <div class="flex items-center gap-3">
                   @if (p.imageUrl) {
                     <img [src]="api.fileUrl(p.imageUrl)" class="h-10 w-10 rounded-lg object-cover" [alt]="p.name" />
@@ -91,7 +92,20 @@ import { AuthService } from '../../core/auth.service';
                 </div>
               </td>
               <td class="px-5 py-3 text-gray-600 dark:text-gray-400">
-                <p>{{ p.sku }}</p><p class="text-xs text-gray-400">{{ p.barcode }}</p>
+                <p class="flex items-center gap-1.5">
+                  {{ p.sku }}
+                  <button (click)="copy(p, 'sku')" title="Copiar SKU"
+                    class="rounded p-0.5 text-gray-400 hover:bg-gray-200 hover:text-gray-600 dark:hover:bg-gray-700">
+                    @if (copied === p.id + 'sku') { <span class="text-success-600">✓</span> } @else { ⧉ }
+                  </button>
+                </p>
+                <p class="flex items-center gap-1.5 text-xs text-gray-400">
+                  {{ p.barcode }}
+                  <button (click)="copy(p, 'barcode')" title="Copiar código de barras"
+                    class="rounded p-0.5 text-gray-400 hover:bg-gray-200 hover:text-gray-600 dark:hover:bg-gray-700">
+                    @if (copied === p.id + 'barcode') { <span class="text-success-600">✓</span> } @else { ⧉ }
+                  </button>
+                </p>
               </td>
               <td class="px-5 py-3 text-right font-medium text-gray-800 dark:text-white/90">{{ clp(p.price) }}</td>
               <td class="px-5 py-3 text-right">
@@ -134,6 +148,7 @@ export class VentraProductosComponent implements OnInit {
   bulkPercent?: number;
   bulkCategory = '';
   bulkMsg = '';
+  copied = '';
   form: Partial<Product> = {};
 
   constructor(
@@ -156,6 +171,12 @@ export class VentraProductosComponent implements OnInit {
   ngOnInit() {
     this.load();
     this.api.categories().subscribe((c) => (this.cats = c));
+  }
+
+  copy(p: Product, field: 'sku' | 'barcode') {
+    navigator.clipboard.writeText(field === 'sku' ? p.sku : p.barcode);
+    this.copied = p.id + field;
+    setTimeout(() => (this.copied = ''), 1200);
   }
 
   load() {
