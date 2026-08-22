@@ -50,6 +50,11 @@ export class AppSidebarComponent {
       path: "/vencimientos",
     },
     {
+      icon: `<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" clip-rule="evenodd" d="M6 2C4.9 2 4 2.9 4 4V20C4 21.1 4.9 22 6 22H18C19.1 22 20 21.1 20 20V8L14 2H6ZM13 3.5L18.5 9H13V3.5ZM6 4H11V9C11 10.1 11.9 11 13 11H18V20H6V4ZM8 13V15H16V13H8ZM8 17V19H13V17H8Z" fill="currentColor"></path></svg>`,
+      name: "Guías y facturas",
+      path: "/documentos",
+    },
+    {
       icon: `<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" clip-rule="evenodd" d="M5 21V3H7V19H21V21H5ZM9 17V10H12V17H9ZM13.5 17V6H16.5V17H13.5ZM18 17V12H21V17H18Z" fill="currentColor"></path></svg>`,
       name: "Reportes",
       path: "/reportes",

@@ -4,6 +4,7 @@ import { Injectable } from '@angular/core';
 // En el navegador/simulador apunta a localhost.
 // En un teléfono real cambia por la IP LAN de tu Mac, ej: http://192.168.1.20:3010/api
 export const API_URL = 'http://localhost:3010/api';
+export const FILES_URL = 'http://localhost:3010';
 
 export interface Summary {
   totals: { ventas: number; total: number; neto: number; iva: number };
@@ -67,4 +68,28 @@ export class ApiService {
   closeCount(id: string, apply: boolean) {
     return this.http.post<InventoryCount>(`${API_URL}/inventory/counts/${id}/close`, { apply });
   }
+
+  docs() {
+    return this.http.get<PurchaseDoc[]>(`${API_URL}/purchase-docs`);
+  }
+
+  createDoc(fd: FormData) {
+    return this.http.post<PurchaseDoc>(`${API_URL}/purchase-docs`, fd);
+  }
+
+  fileUrl(path: string) {
+    return `${FILES_URL}${path}`;
+  }
+}
+
+export interface PurchaseDoc {
+  id: string;
+  type: 'GUIA' | 'FACTURA';
+  supplier?: string;
+  folio?: string;
+  docDate?: string;
+  amount?: number;
+  note?: string;
+  imageUrl: string;
+  createdAt: string;
 }

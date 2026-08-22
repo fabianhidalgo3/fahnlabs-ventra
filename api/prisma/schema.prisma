@@ -136,6 +136,25 @@ model InventoryCountItem {
   @@unique([countId, productId])
 }
 
+model PurchaseDoc {
+  id        String   @id @default(uuid())
+  type      DocType
+  supplier  String?
+  folio     String?
+  docDate   DateTime?
+  amount    Decimal? @db.Decimal(12, 2)
+  note      String?
+  imageUrl  String
+  createdAt DateTime @default(now())
+
+  @@index([type, docDate])
+}
+
+enum DocType {
+  GUIA
+  FACTURA
+}
+
 enum Payment {
   EFECTIVO
   DEBITO

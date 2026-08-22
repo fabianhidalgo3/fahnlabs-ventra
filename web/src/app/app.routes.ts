@@ -7,6 +7,7 @@ import { VentraPosComponent } from './pages/ventra/pos.component';
 import { VentraVencimientosComponent } from './pages/ventra/vencimientos.component';
 import { VentraReportesComponent } from './pages/ventra/reportes.component';
 import { VentraUsuariosComponent } from './pages/ventra/usuarios.component';
+import { VentraDocumentosComponent } from './pages/ventra/documentos.component';
 import { VentraLoginComponent } from './pages/ventra/login.component';
 import { authGuard, adminGuard } from './core/auth.service';
 
@@ -36,6 +37,11 @@ export const routes: Routes = [
         path: 'vencimientos',
         component: VentraVencimientosComponent,
         title: 'Vencimientos | Ventra by FHAN Labs',
+      },
+      {
+        path: 'documentos',
+        component: VentraDocumentosComponent,
+        title: 'Guías y facturas | Ventra by FHAN Labs',
       },
       {
         path: 'reportes',
