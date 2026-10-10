@@ -2,8 +2,10 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 
-export const API_URL = 'http://localhost:3010/api';
-export const FILES_URL = 'http://localhost:3010';
+// Rutas relativas: en dev las resuelve el proxy de ng serve (proxy.conf.json)
+// y así la app funciona igual detrás de un túnel público.
+export const API_URL = '/api';
+export const FILES_URL = '';
 
 export interface Product {
   id: string;
