@@ -59,6 +59,21 @@ const esc = (v: unknown): string =>
     @if (showForm) {
       <div class="mb-4 rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-gray-900">
         <h4 class="mb-3 font-semibold text-gray-800 dark:text-white/90">{{ editing ? 'Editar' : 'Nuevo' }} producto</h4>
+        <div class="flex flex-col gap-5 md:flex-row">
+          <!-- Imagen del producto en grande, con vista previa en vivo -->
+          <div class="shrink-0">
+            <img [src]="imagePreview" alt="Imagen del producto"
+              class="h-48 w-48 rounded-2xl border border-gray-200 object-cover dark:border-gray-800"
+              onerror="this.src='/images/product-placeholder.svg'" />
+            <label class="mt-2 block">
+              <span class="inline-flex h-10 w-48 cursor-pointer items-center justify-center gap-2 rounded-lg border border-gray-300 bg-white px-4 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:hover:bg-gray-800">
+                📷 {{ editing?.imageUrl || imageFile ? 'Cambiar foto' : 'Subir foto' }}
+              </span>
+              <input type="file" accept="image/*" hidden (change)="onImagePick($any($event.target).files[0])" />
+            </label>
+          </div>
+
+          <div class="min-w-0 flex-1">
         <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
           <div>
             <input [(ngModel)]="form.name" placeholder="Nombre *" required
@@ -88,12 +103,12 @@ const esc = (v: unknown): string =>
             <option value="">Sin categoría</option>
             @for (c of cats; track c.id) { <option [value]="c.id">{{ c.name }}</option> }
           </select>
-          <input type="file" accept="image/*" (change)="imageFile = $any($event.target).files[0]"
-            class="block text-sm text-gray-500 file:mr-3 file:rounded-lg file:border-0 file:bg-gray-200 file:px-4 file:py-2.5 dark:file:bg-gray-700 dark:file:text-gray-200" />
         </div>
         <div class="mt-4 flex gap-2">
           <button (click)="save()" [disabled]="!formValido" class="inline-flex h-10 items-center gap-2 rounded-lg bg-brand-500 px-4 text-sm font-medium text-white shadow-theme-xs hover:bg-brand-600 disabled:opacity-40">Guardar</button>
           <button (click)="showForm = false" class="inline-flex h-10 items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:hover:bg-gray-800">Cancelar</button>
+        </div>
+          </div>
         </div>
       </div>
     }
@@ -112,6 +127,7 @@ export class VentraProductosComponent implements OnInit {
   showBulk = false;
   editing?: Product;
   imageFile?: File;
+  imagePreview = '/images/product-placeholder.svg';
   bulkPercent?: number;
   bulkCategory = '';
   bulkMsg = '';
@@ -300,7 +316,15 @@ export class VentraProductosComponent implements OnInit {
     this.editing = p;
     this.form = p ? { name: p.name, price: Number(p.price), stock: p.stock, barcode: p.barcode, categoryId: p.categoryId ?? '' } : {};
     this.imageFile = undefined;
+    this.imagePreview = p?.imageUrl ? this.api.fileUrl(p.imageUrl) : '/images/product-placeholder.svg';
     this.showForm = true;
+  }
+
+  /** Vista previa en vivo de la foto elegida, antes de guardar. */
+  onImagePick(file?: File) {
+    if (!file) return;
+    this.imageFile = file;
+    this.imagePreview = URL.createObjectURL(file);
   }
 
   save() {
