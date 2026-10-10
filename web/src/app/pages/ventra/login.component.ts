@@ -52,7 +52,8 @@ export class VentraLoginComponent {
     this.loading = true;
     this.error = '';
     this.auth.login(this.email, this.password).subscribe({
-      next: () => this.router.navigate(['/']),
+      // El vendedor aterriza directo en la caja
+      next: () => this.router.navigate([this.auth.isAdmin ? '/' : '/pos']),
       error: (e) => {
         this.error = e?.error?.message ?? 'No se pudo iniciar sesión';
         this.loading = false;

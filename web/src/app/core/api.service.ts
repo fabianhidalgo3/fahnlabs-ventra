@@ -164,4 +164,17 @@ export class ApiService {
   fileUrl(path?: string) {
     return path ? `${FILES_URL}${path}` : '';
   }
+
+  // Asistente IA (Ollama local)
+  ask(question: string) {
+    return this.http.post<{ answer: string }>(`${API_URL}/assistant/ask`, { question });
+  }
+  dailyBrief() {
+    return this.http.get<{ text: string }>(`${API_URL}/assistant/daily-brief`);
+  }
+}
+
+/** Abre WhatsApp con un mensaje listo para elegir contacto y enviar. */
+export function whatsappUrl(text: string): string {
+  return `https://wa.me/?text=${encodeURIComponent(text)}`;
 }

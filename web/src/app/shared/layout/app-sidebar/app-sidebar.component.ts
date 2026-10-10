@@ -55,6 +55,11 @@ export class AppSidebarComponent {
       path: "/documentos",
     },
     {
+      icon: `<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" clip-rule="evenodd" d="M12 2L13.8 8.2L20 10L13.8 11.8L12 18L10.2 11.8L4 10L10.2 8.2L12 2ZM19 15L19.9 17.6L22.5 18.5L19.9 19.4L19 22L18.1 19.4L15.5 18.5L18.1 17.6L19 15ZM5 15L5.9 17.6L8.5 18.5L5.9 19.4L5 22L4.1 19.4L1.5 18.5L4.1 17.6L5 15Z" fill="currentColor"></path></svg>`,
+      name: "Asistente IA",
+      path: "/asistente",
+    },
+    {
       icon: `<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" clip-rule="evenodd" d="M5 21V3H7V19H21V21H5ZM9 17V10H12V17H9ZM13.5 17V6H16.5V17H13.5ZM18 17V12H21V17H18Z" fill="currentColor"></path></svg>`,
       name: "Reportes",
       path: "/reportes",
@@ -87,6 +92,10 @@ export class AppSidebarComponent {
       });
     } else {
       this.navItems = this.navItems.filter((i) => i.name !== 'Reportes');
+      const pos = this.navItems.find((i) => i.path === '/pos');
+      if (pos) {
+        this.navItems = [pos, ...this.navItems.filter((i) => i !== pos)];
+      }
     }
     this.isExpanded$ = this.sidebarService.isExpanded$;
     this.isMobileOpen$ = this.sidebarService.isMobileOpen$;

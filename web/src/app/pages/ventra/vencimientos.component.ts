@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { ApiService, BatchAlert } from '../../core/api.service';
+import { ApiService, BatchAlert, whatsappUrl } from '../../core/api.service';
 
 @Component({
   selector: 'app-ventra-vencimientos',
@@ -18,6 +18,12 @@ import { ApiService, BatchAlert } from '../../core/api.service';
         <option [value]="90">90 días</option>
       </select>
       <span class="text-sm text-gray-400">{{ alerts.length }} lotes</span>
+      @if (alerts.length) {
+        <a [href]="waAlerts()" target="_blank"
+          class="ml-auto rounded-lg bg-success-500 px-4 py-2 text-sm font-medium text-white hover:bg-success-600">
+          📲 Enviar por WhatsApp
+        </a>
+      }
     </div>
 
     <div class="rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03] overflow-x-auto">
@@ -83,5 +89,12 @@ export class VentraVencimientosComponent implements OnInit {
   label(a: BatchAlert) {
     if (a.level === 'vencido') return 'VENCIDO';
     return `${a.daysToExpiry} días (${a.level})`;
+  }
+
+  waAlerts(): string {
+    const lines = this.alerts
+      .slice(0, 20)
+      .map((a) => `• ${a.product.name} (lote ${a.lotCode}, ${a.quantity} un.): ${a.daysToExpiry < 0 ? 'VENCIDO' : 'vence en ' + a.daysToExpiry + ' días'}`);
+    return whatsappUrl(`⚠️ Vencimientos próximos — Ventra\n\n${lines.join('\n')}`);
   }
 }
