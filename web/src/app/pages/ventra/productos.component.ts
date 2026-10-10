@@ -1,14 +1,22 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, computed, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { AgGridAngular } from 'ag-grid-angular';
+import type { CellClickedEvent, ColDef, ICellRendererParams } from 'ag-grid-community';
 import { ApiService, Product, Category } from '../../core/api.service';
 import { AuthService } from '../../core/auth.service';
+import { ventraGridTheme, GRID_TEXT } from '../../core/grid';
+import { ThemeService } from '../../core/theme.service';
 import { PageHeaderComponent } from '../../shared/components/ventra/page-header.component';
+
+/** Escapa HTML para los cellRenderer basados en strings. */
+const esc = (v: unknown): string =>
+  String(v ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
 
 @Component({
   selector: 'app-ventra-productos',
   standalone: true,
-  imports: [CommonModule, FormsModule, PageHeaderComponent],
+  imports: [CommonModule, FormsModule, PageHeaderComponent, AgGridAngular],
   template: `
     <app-page-header title="Productos" subtitle="Inventario, precios, códigos y vencimientos">
       @if (auth.isAdmin) {
@@ -90,84 +98,10 @@ import { PageHeaderComponent } from '../../shared/components/ventra/page-header.
       </div>
     }
 
-    <div class="rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900 max-h-[70vh] overflow-auto">
-      <table class="w-full min-w-[900px] text-sm">
-        <thead class="sticky top-0 z-10">
-          <tr class="border-b border-gray-100 bg-white text-left dark:border-gray-800 dark:bg-gray-900">
-            <th class="sticky left-0 z-20 bg-white px-5 py-3 text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:bg-gray-900 dark:text-gray-500">Producto</th>
-            <th class="px-5 py-3 text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">SKU / Código</th><th class="px-5 py-3 text-right text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">Precio</th>
-            <th class="px-5 py-3 text-right text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">Stock</th><th class="px-5 py-3 text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">Vencimiento</th><th class="px-5 py-3 text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">Acciones</th>
-          </tr>
-        </thead>
-        <tbody>
-          @for (p of products; track p.id) {
-            <tr class="group border-b border-gray-50 hover:bg-gray-50 dark:border-gray-800/50 dark:hover:bg-white/[0.03]">
-              <td class="sticky left-0 z-[5] bg-white px-5 py-3 group-hover:bg-gray-50 dark:bg-gray-900 dark:group-hover:bg-gray-800">
-                <div class="flex items-center gap-3">
-                  @if (p.imageUrl) {
-                    <img [src]="api.fileUrl(p.imageUrl)" class="h-10 w-10 rounded-lg object-cover" [alt]="p.name" loading="lazy" onerror="this.src='/images/product-placeholder.svg'" />
-                  } @else {
-                    <img src="/images/product-placeholder.svg" class="h-10 w-10 rounded-lg object-cover" [alt]="p.name" loading="lazy" />
-                  }
-                  <div>
-                    <p class="font-medium text-gray-800 dark:text-white/90">{{ p.name }}</p>
-                    <p class="text-xs text-gray-400">{{ p.category?.name ?? '—' }}</p>
-                  </div>
-                </div>
-              </td>
-              <td class="px-5 py-3 text-gray-600 dark:text-gray-400">
-                <p class="flex items-center gap-1.5">
-                  {{ p.sku }}
-                  <button (click)="copy(p, 'sku')" title="Copiar SKU"
-                    class="rounded p-0.5 text-gray-400 hover:bg-gray-200 hover:text-gray-600 dark:hover:bg-gray-700">
-                    @if (copied === p.id + 'sku') { <span class="text-success-600">✓</span> } @else { ⧉ }
-                  </button>
-                </p>
-                <p class="flex items-center gap-1.5 text-xs text-gray-400">
-                  {{ p.barcode }}
-                  <button (click)="copy(p, 'barcode')" title="Copiar código de barras"
-                    class="rounded p-0.5 text-gray-400 hover:bg-gray-200 hover:text-gray-600 dark:hover:bg-gray-700">
-                    @if (copied === p.id + 'barcode') { <span class="text-success-600">✓</span> } @else { ⧉ }
-                  </button>
-                </p>
-              </td>
-              <td class="px-5 py-3 text-right font-medium text-gray-800 dark:text-white/90">{{ clp(p.price) }}</td>
-              <td class="px-5 py-3 text-right">
-                <span [class]="p.stock <= p.minStock ? 'text-error-600 font-semibold' : 'text-gray-700 dark:text-gray-300'">{{ p.stock }}</span>
-              </td>
-              <td class="px-5 py-3">
-                @if (p.daysToExpiry !== null && p.daysToExpiry !== undefined) {
-                  <span class="rounded-full px-2.5 py-0.5 text-xs font-medium" [class]="badge(p.daysToExpiry)">
-                    {{ p.daysToExpiry < 0 ? 'Vencido' : p.daysToExpiry + ' días' }}
-                  </span>
-                } @else { <span class="text-xs text-gray-400">—</span> }
-              </td>
-              <td class="px-5 py-3">
-                <div class="flex gap-2 text-xs">
-                  @if (auth.isAdmin) {
-                    <button (click)="openForm(p)" class="rounded border border-gray-300 px-2 py-1 dark:border-gray-700 dark:text-gray-300">Editar</button>
-                  }
-                  <a [href]="api.barcodeUrl(p.id)" target="_blank" class="rounded border border-gray-300 px-2 py-1 dark:border-gray-700 dark:text-gray-300">Barras</a>
-                  <a [href]="api.qrUrl(p.id)" target="_blank" class="rounded border border-gray-300 px-2 py-1 dark:border-gray-700 dark:text-gray-300">QR</a>
-                  @if (auth.isAdmin) {
-                    <button (click)="remove(p)" class="rounded border border-error-300 px-2 py-1 text-error-600">Eliminar</button>
-                  }
-                </div>
-              </td>
-            </tr>
-          } @empty {
-            <tr>
-              <td colspan="6" class="px-5 py-10 text-center">
-                <svg class="mx-auto h-10 w-10 text-gray-300" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="m21 7.5-9-5.25L3 7.5m18 0-9 5.25m9-5.25v9l-9 5.25M3 7.5l9 5.25M3 7.5v9l9 5.25m0-9v9" />
-                </svg>
-                <p class="mt-2 text-sm text-gray-400">Sin productos registrados</p>
-              </td>
-            </tr>
-          }
-        </tbody>
-      </table>
-    </div>
+    <ag-grid-angular class="w-full" [theme]="theme()" [rowData]="products" [columnDefs]="cols"
+      [defaultColDef]="defaultCol" domLayout="autoHeight" [rowHeight]="56" [localeText]="GRID_TEXT"
+      [pagination]="true" [paginationPageSize]="20" [paginationPageSizeSelector]="[10, 20, 50]"
+      (cellClicked)="onCell($event)" />
   `,
 })
 export class VentraProductosComponent implements OnInit {
@@ -181,13 +115,21 @@ export class VentraProductosComponent implements OnInit {
   bulkPercent?: number;
   bulkCategory = '';
   bulkMsg = '';
-  copied = '';
   form: Partial<Product> = {};
+
+  private themeSvc = inject(ThemeService);
+  theme = computed(() => ventraGridTheme(this.themeSvc.isDark()));
+  GRID_TEXT = GRID_TEXT;
+
+  defaultCol: ColDef<Product> = { sortable: true, resizable: true, filter: false, flex: 1, minWidth: 110 };
+  cols: ColDef<Product>[];
 
   constructor(
     public api: ApiService,
     public auth: AuthService,
-  ) {}
+  ) {
+    this.cols = this.buildCols();
+  }
 
   clp(n: number) {
     return '$' + Math.round(Number(n)).toLocaleString('es-CL');
@@ -199,6 +141,115 @@ export class VentraProductosComponent implements OnInit {
     if (days <= 15) return 'bg-warning-50 text-warning-600 dark:bg-warning-500/15 dark:text-warning-400';
     if (days <= 30) return 'bg-blue-light-50 text-blue-light-600 dark:bg-blue-light-500/15 dark:text-blue-light-400';
     return 'bg-success-50 text-success-600 dark:bg-success-500/15 dark:text-success-400';
+  }
+
+  private buildCols(): ColDef<Product>[] {
+    const btn = 'rounded border border-gray-300 px-2 py-1 text-xs dark:border-gray-700 dark:text-gray-300';
+    const copyBtn = 'rounded p-0.5 text-gray-400 hover:bg-gray-200 hover:text-gray-600 dark:hover:bg-gray-700';
+    const admin = this.auth.isAdmin;
+    return [
+      {
+        headerName: 'Producto',
+        field: 'name',
+        pinned: 'left',
+        minWidth: 240,
+        cellRenderer: (p: ICellRendererParams<Product>) => {
+          const d = p.data!;
+          const src = d.imageUrl ? this.api.fileUrl(d.imageUrl) : '/images/product-placeholder.svg';
+          return `<div class="flex items-center gap-3">
+            <img src="${esc(src)}" alt="${esc(d.name)}" loading="lazy" class="h-9 w-9 shrink-0 rounded-lg object-cover"
+              onerror="this.onerror=null;this.src='/images/product-placeholder.svg'" />
+            <div class="leading-tight">
+              <p class="font-medium text-gray-800 dark:text-white/90">${esc(d.name)}</p>
+              <p class="text-xs text-gray-400">${esc(d.category?.name ?? '—')}</p>
+            </div>
+          </div>`;
+        },
+      },
+      {
+        headerName: 'SKU / Código',
+        field: 'sku',
+        minWidth: 180,
+        cellRenderer: (p: ICellRendererParams<Product>) => {
+          const d = p.data!;
+          return `<div class="leading-tight">
+            <p class="flex items-center gap-1.5 text-gray-600 dark:text-gray-400">${esc(d.sku)}
+              <button data-action="copiar-sku" title="Copiar SKU" class="${copyBtn}">⧉</button></p>
+            <p class="flex items-center gap-1.5 text-xs text-gray-400">${esc(d.barcode)}
+              <button data-action="copiar-codigo" title="Copiar código de barras" class="${copyBtn}">⧉</button></p>
+          </div>`;
+        },
+      },
+      {
+        headerName: 'Precio',
+        type: 'rightAligned',
+        valueGetter: (p) => Number(p.data?.price),
+        valueFormatter: (p) => this.clp(p.value),
+        cellClass: 'font-medium text-gray-800 dark:text-white/90',
+      },
+      {
+        headerName: 'Stock',
+        field: 'stock',
+        type: 'rightAligned',
+        cellRenderer: (p: ICellRendererParams<Product>) => {
+          const d = p.data!;
+          const cls = d.stock <= d.minStock ? 'text-error-600 font-semibold' : 'text-gray-700 dark:text-gray-300';
+          return `<span class="${cls}">${d.stock}</span>`;
+        },
+      },
+      {
+        headerName: 'Vencimiento',
+        field: 'daysToExpiry',
+        minWidth: 130,
+        cellRenderer: (p: ICellRendererParams<Product>) => {
+          const days = p.data?.daysToExpiry;
+          if (days === null || days === undefined) return '<span class="text-xs text-gray-400">—</span>';
+          const label = days < 0 ? 'Vencido' : `${days} días`;
+          return `<span class="rounded-full px-2.5 py-0.5 text-xs font-medium ${this.badge(days)}">${label}</span>`;
+        },
+      },
+      {
+        headerName: 'Acciones',
+        sortable: false,
+        minWidth: admin ? 230 : 140,
+        cellRenderer: () => {
+          const parts = [
+            ...(admin ? [`<button data-action="editar" class="${btn}">Editar</button>`] : []),
+            `<button data-action="barras" class="${btn}">Barras</button>`,
+            `<button data-action="qr" class="${btn}">QR</button>`,
+            ...(admin ? [`<button data-action="eliminar" class="rounded border border-error-300 px-2 py-1 text-xs text-error-600">Eliminar</button>`] : []),
+          ];
+          return `<div class="flex items-center gap-2">${parts.join('')}</div>`;
+        },
+      },
+    ];
+  }
+
+  onCell(e: CellClickedEvent<Product>) {
+    const btn = (e.event?.target as HTMLElement)?.closest('[data-action]') as HTMLElement | null;
+    const action = btn?.getAttribute('data-action');
+    const p = e.data;
+    if (!action || !p) return;
+    switch (action) {
+      case 'editar':
+        this.openForm(p);
+        break;
+      case 'eliminar':
+        this.remove(p);
+        break;
+      case 'barras':
+        window.open(this.api.barcodeUrl(p.id), '_blank');
+        break;
+      case 'qr':
+        window.open(this.api.qrUrl(p.id), '_blank');
+        break;
+      case 'copiar-sku':
+        this.copy(p, 'sku', btn!);
+        break;
+      case 'copiar-codigo':
+        this.copy(p, 'barcode', btn!);
+        break;
+    }
   }
 
   ngOnInit() {
@@ -232,10 +283,13 @@ export class VentraProductosComponent implements OnInit {
     );
   }
 
-  copy(p: Product, field: 'sku' | 'barcode') {
+  copy(p: Product, field: 'sku' | 'barcode', btn?: HTMLElement) {
     navigator.clipboard.writeText(field === 'sku' ? p.sku : p.barcode);
-    this.copied = p.id + field;
-    setTimeout(() => (this.copied = ''), 1200);
+    if (btn) {
+      const prev = btn.innerText;
+      btn.innerText = '✓';
+      setTimeout(() => (btn.innerText = prev), 1200);
+    }
   }
 
   load() {

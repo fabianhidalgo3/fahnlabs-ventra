@@ -1,9 +1,23 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { NgApexchartsModule, ApexOptions } from 'ng-apexcharts';
 import { ApiService, Summary } from '../../core/api.service';
 import { PageHeaderComponent } from '../../shared/components/ventra/page-header.component';
+import { apexBase, CHART_PALETTE, clpFormatter } from '../../core/charts';
+import { ThemeService } from '../../core/theme.service';
+
+const PAY_LABELS: Record<string, string> = {
+  EFECTIVO: 'Efectivo',
+  DEBITO: 'Débito',
+  CREDITO: 'Crédito',
+  TRANSFERENCIA: 'Transferencia',
+};
+
+function payLabel(p: string): string {
+  if (!p) return p;
+  return PAY_LABELS[p.toUpperCase()] ?? p.charAt(0).toUpperCase() + p.slice(1).toLowerCase();
+}
 
 @Component({
   selector: 'app-ventra-reportes',
@@ -110,11 +124,29 @@ import { PageHeaderComponent } from '../../shared/components/ventra/page-header.
         </div>
       </div>
 
-      <div class="mb-6 rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-gray-900">
-        @if (chart) {
-          <apx-chart [series]="chart.series!" [chart]="chart.chart!" [xaxis]="chart.xaxis!"
-            [dataLabels]="chart.dataLabels!" [colors]="chart.colors!" [tooltip]="chart.tooltip!" [plotOptions]="chart.plotOptions!" />
-        }
+      <div class="mb-6 grid grid-cols-1 gap-6 xl:grid-cols-2">
+        <div class="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-gray-900">
+          <h3 class="mb-4 text-lg font-semibold text-gray-800 dark:text-white/90">Ventas del período</h3>
+          @if (barChart) {
+            <apx-chart
+              [series]="barChart.series!" [chart]="barChart.chart!" [xaxis]="barChart.xaxis!"
+              [yaxis]="barChart.yaxis!" [plotOptions]="barChart.plotOptions!" [fill]="barChart.fill!"
+              [grid]="barChart.grid!" [dataLabels]="barChart.dataLabels!" [colors]="barChart.colors!"
+              [tooltip]="barChart.tooltip!" />
+          }
+        </div>
+
+        <div class="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-gray-900">
+          <h3 class="mb-4 text-lg font-semibold text-gray-800 dark:text-white/90">Por medio de pago</h3>
+          @if (payChart) {
+            <apx-chart
+              [series]="payChart.series!" [chart]="payChart.chart!" [labels]="payChart.labels!"
+              [colors]="payChart.colors!" [legend]="payChart.legend!" [plotOptions]="payChart.plotOptions!"
+              [stroke]="payChart.stroke!" [dataLabels]="payChart.dataLabels!" [tooltip]="payChart.tooltip!" />
+          } @else {
+            <p class="py-10 text-center text-sm text-gray-400 dark:text-gray-500">Sin ventas en el período</p>
+          }
+        </div>
       </div>
 
       <div class="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-gray-900">
@@ -146,12 +178,23 @@ export class VentraReportesComponent implements OnInit {
   to = new Date().toISOString().slice(0, 10);
   groupBy: 'day' | 'week' | 'month' = 'day';
   summary?: Summary;
-  chart?: Partial<ApexOptions>;
+  barChart?: Partial<ApexOptions>;
+  payChart?: Partial<ApexOptions>;
+  private loadedGroupBy: 'day' | 'week' | 'month' = 'day';
 
-  constructor(public api: ApiService) {}
+  constructor(
+    public api: ApiService,
+    private theme: ThemeService,
+  ) {
+    // Re-render de los gráficos al cambiar entre claro/oscuro.
+    effect(() => {
+      this.theme.isDark();
+      this.rebuildCharts();
+    });
+  }
 
   clp(n: number) {
-    return '$' + Math.round(n).toLocaleString('es-CL');
+    return clpFormatter(n);
   }
 
   ngOnInit() {
@@ -159,19 +202,93 @@ export class VentraReportesComponent implements OnInit {
   }
 
   load() {
-    this.api.summary(this.from, this.to, this.groupBy).subscribe((s) => {
+    const groupBy = this.groupBy;
+    this.api.summary(this.from, this.to, groupBy).subscribe((s) => {
       this.summary = s;
-      const fmt: Intl.DateTimeFormatOptions =
-        this.groupBy === 'month' ? { month: 'short', year: '2-digit' } : { day: '2-digit', month: '2-digit' };
-      this.chart = {
-        series: [{ name: 'Total', data: s.series.map((r) => Math.round(r.total)) }],
-        chart: { type: 'bar', height: 320, toolbar: { show: false }, fontFamily: 'inherit' },
-        plotOptions: { bar: { borderRadius: 5, columnWidth: '45%' } },
-        xaxis: { categories: s.series.map((r) => new Date(r.bucket).toLocaleDateString('es-CL', fmt)) },
-        dataLabels: { enabled: false },
-        colors: ['#465fff'],
-        tooltip: { y: { formatter: (v: number) => this.clp(v) } },
-      };
+      this.loadedGroupBy = groupBy;
+      this.rebuildCharts();
     });
+  }
+
+  private rebuildCharts() {
+    const s = this.summary;
+    if (!s) return;
+    const dark = this.theme.isDark();
+    this.barChart = this.buildBarChart(s, dark);
+    this.payChart = s.byPayment?.length ? this.buildPayChart(s.byPayment, dark) : undefined;
+  }
+
+  private buildBarChart(s: Summary, dark: boolean): Partial<ApexOptions> {
+    const base = apexBase(dark);
+    const fmt: Intl.DateTimeFormatOptions =
+      this.loadedGroupBy === 'month' ? { month: 'short', year: '2-digit' } : { day: '2-digit', month: '2-digit' };
+    return {
+      series: [{ name: 'Total', data: s.series.map((r) => Math.round(r.total)) }],
+      chart: { ...base.chart, type: 'bar', height: 320 },
+      colors: [CHART_PALETTE[0]],
+      plotOptions: { bar: { borderRadius: 6, columnWidth: '45%', borderRadiusApplication: 'end' } },
+      fill: {
+        type: 'gradient',
+        gradient: {
+          type: 'vertical',
+          shadeIntensity: 0,
+          gradientToColors: [CHART_PALETTE[0]],
+          opacityFrom: 0.95,
+          opacityTo: 0.75,
+          stops: [0, 100],
+        },
+      },
+      dataLabels: { enabled: false },
+      grid: base.grid,
+      xaxis: {
+        categories: s.series.map((r) => new Date(r.bucket).toLocaleDateString('es-CL', fmt)),
+        axisBorder: { show: false },
+        axisTicks: { show: false },
+        labels: { style: { fontSize: '12px' } },
+      },
+      yaxis: { labels: { formatter: clpFormatter, style: { fontSize: '12px' } } },
+      tooltip: { ...base.tooltip, y: { formatter: clpFormatter } },
+    };
+  }
+
+  private buildPayChart(by: NonNullable<Summary['byPayment']>, dark: boolean): Partial<ApexOptions> {
+    const base = apexBase(dark);
+    return {
+      series: by.map((p) => Math.round(p.total)),
+      labels: by.map((p) => payLabel(p.payment)),
+      chart: { ...base.chart, type: 'donut', height: 320 },
+      colors: CHART_PALETTE,
+      stroke: { width: 0 },
+      dataLabels: { enabled: false },
+      legend: { ...base.legend },
+      tooltip: { ...base.tooltip, y: { formatter: clpFormatter } },
+      plotOptions: {
+        pie: {
+          donut: {
+            size: '72%',
+            labels: {
+              show: true,
+              name: { show: true, fontSize: '13px', offsetY: 18, color: dark ? '#A1A1AA' : '#71717A' },
+              value: {
+                show: true,
+                fontSize: '20px',
+                fontWeight: 700,
+                offsetY: -16,
+                color: dark ? '#FFFFFF' : '#18181B',
+                formatter: (v: string) => clpFormatter(Number(v)),
+              },
+              total: {
+                show: true,
+                label: 'Total',
+                fontSize: '13px',
+                color: dark ? '#A1A1AA' : '#71717A',
+                formatter: (w: any) =>
+                  clpFormatter(w.globals.seriesTotals.reduce((a: number, b: number) => a + b, 0)),
+              },
+            },
+          },
+        },
+      },
+    };
   }
 }

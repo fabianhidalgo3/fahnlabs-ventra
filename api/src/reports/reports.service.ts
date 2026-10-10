@@ -60,6 +60,13 @@ export class ReportsService {
       WHERE s."createdAt" BETWEEN ${start} AND ${end} AND s."voidedAt" IS NULL
       GROUP BY p.name ORDER BY total DESC LIMIT 10`;
 
+    const byPaymentRaw = await this.prisma.sale.groupBy({
+      by: ['payment'],
+      where: { createdAt: { gte: start, lte: end }, voidedAt: null },
+      _count: true,
+      _sum: { total: true },
+    });
+
     return {
       from: start,
       to: end,
@@ -67,6 +74,11 @@ export class ReportsService {
       totals,
       series: rows.map((r) => ({ ...r, ventas: Number(r.ventas) })),
       topProducts: top.map((t) => ({ ...t, unidades: Number(t.unidades) })),
+      byPayment: byPaymentRaw.map((p) => ({
+        payment: p.payment,
+        ventas: p._count,
+        total: Number(p._sum.total ?? 0),
+      })),
     };
   }
 

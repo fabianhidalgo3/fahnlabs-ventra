@@ -93,6 +93,7 @@ export interface Summary {
   totals: { ventas: number; total: number; neto: number; iva: number };
   series: { bucket: string; ventas: number; total: number }[];
   topProducts: { name: string; unidades: number; total: number }[];
+  byPayment?: { payment: string; ventas: number; total: number }[];
   lastSales?: Sale[];
 }
 

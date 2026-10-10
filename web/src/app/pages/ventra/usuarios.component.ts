@@ -1,8 +1,11 @@
-import { Component, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, OnInit, computed, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
+import { AgGridAngular } from 'ag-grid-angular';
+import type { CellClickedEvent, ColDef, ICellRendererParams } from 'ag-grid-community';
 import { API_URL } from '../../core/api.service';
+import { GRID_TEXT, ventraGridTheme } from '../../core/grid';
+import { ThemeService } from '../../core/theme.service';
 import { PageHeaderComponent } from '../../shared/components/ventra/page-header.component';
 
 interface AppUser {
@@ -17,7 +20,7 @@ interface AppUser {
 @Component({
   selector: 'app-ventra-usuarios',
   standalone: true,
-  imports: [CommonModule, FormsModule, PageHeaderComponent],
+  imports: [FormsModule, PageHeaderComponent, AgGridAngular],
   template: `
     <app-page-header title="Usuarios" subtitle="Cuentas y perfiles de acceso">
       <span class="text-sm text-gray-400">{{ users.length }} usuarios</span>
@@ -49,47 +52,16 @@ interface AppUser {
       </div>
     }
 
-    <div class="rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900 overflow-x-auto">
-      <table class="w-full text-sm">
-        <thead>
-          <tr class="border-b border-gray-100 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:border-gray-800 dark:text-gray-500">
-            <th class="px-5 py-3">Nombre</th><th class="px-5 py-3">Email</th><th class="px-5 py-3">Perfil</th>
-            <th class="px-5 py-3">Estado</th><th class="px-5 py-3">Creado</th><th class="px-5 py-3">Acciones</th>
-          </tr>
-        </thead>
-        <tbody>
-          @for (u of users; track u.id) {
-            <tr class="border-b border-gray-50 dark:border-gray-800/50">
-              <td class="px-5 py-3 font-medium text-gray-800 dark:text-white/90">{{ u.name }}</td>
-              <td class="px-5 py-3 text-gray-600 dark:text-gray-400">{{ u.email }}</td>
-              <td class="px-5 py-3">
-                <span class="rounded-full px-2.5 py-1 text-xs font-medium"
-                  [class]="u.role === 'ADMIN' ? 'bg-brand-50 text-brand-600 dark:bg-brand-500/15 dark:text-brand-400' : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-300'">
-                  {{ u.role === 'ADMIN' ? 'Administrador' : 'Vendedor' }}
-                </span>
-              </td>
-              <td class="px-5 py-3">
-                <span class="rounded-full px-2.5 py-1 text-xs font-medium"
-                  [class]="u.active ? 'bg-success-50 text-success-600 dark:bg-success-500/15 dark:text-success-400' : 'bg-error-50 text-error-600 dark:bg-error-500/15 dark:text-error-400'">
-                  {{ u.active ? 'Activo' : 'Inactivo' }}
-                </span>
-              </td>
-              <td class="px-5 py-3 text-gray-600 dark:text-gray-400">{{ u.createdAt | date: 'dd/MM/yyyy' }}</td>
-              <td class="px-5 py-3">
-                <div class="flex gap-2 text-xs">
-                  <button (click)="openForm(u)" class="rounded border border-gray-300 px-2 py-1 dark:border-gray-700 dark:text-gray-300">Editar</button>
-                  @if (u.active) {
-                    <button (click)="deactivate(u)" class="rounded border border-error-300 px-2 py-1 text-error-600">Desactivar</button>
-                  } @else {
-                    <button (click)="activate(u)" class="rounded border border-success-300 px-2 py-1 text-success-600">Activar</button>
-                  }
-                </div>
-              </td>
-            </tr>
-          }
-        </tbody>
-      </table>
-    </div>
+    <ag-grid-angular
+      class="w-full"
+      [theme]="theme()"
+      [rowData]="users"
+      [columnDefs]="cols"
+      [defaultColDef]="defaultColDef"
+      domLayout="autoHeight"
+      [localeText]="GRID_TEXT"
+      (cellClicked)="onCell($event)"
+    />
   `,
 })
 export class VentraUsuariosComponent implements OnInit {
@@ -99,6 +71,69 @@ export class VentraUsuariosComponent implements OnInit {
   error = '';
   form: { name?: string; email?: string; password?: string; role: 'ADMIN' | 'VENDEDOR' } = { role: 'VENDEDOR' };
 
+  private themeSvc = inject(ThemeService);
+  theme = computed(() => ventraGridTheme(this.themeSvc.isDark()));
+  readonly GRID_TEXT = GRID_TEXT;
+
+  defaultColDef: ColDef = { sortable: true, resizable: true, flex: 1, minWidth: 110 };
+
+  cols: ColDef<AppUser>[] = [
+    {
+      headerName: 'Nombre',
+      field: 'name',
+      minWidth: 160,
+      cellClass: 'font-medium text-gray-800 dark:text-white/90',
+    },
+    { headerName: 'Email', field: 'email', minWidth: 200 },
+    {
+      headerName: 'Perfil',
+      field: 'role',
+      valueGetter: (p) => (p.data?.role === 'ADMIN' ? 'Administrador' : 'Vendedor'),
+      cellRenderer: (p: ICellRendererParams<AppUser>) => {
+        const u = p.data;
+        if (!u) return '';
+        const cls =
+          u.role === 'ADMIN'
+            ? 'bg-brand-50 text-brand-600 dark:bg-brand-500/15 dark:text-brand-400'
+            : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-300';
+        return `<span class="rounded-full px-2.5 py-1 text-xs font-medium ${cls}">${u.role === 'ADMIN' ? 'Administrador' : 'Vendedor'}</span>`;
+      },
+    },
+    {
+      headerName: 'Estado',
+      field: 'active',
+      valueGetter: (p) => (p.data?.active ? 'Activo' : 'Inactivo'),
+      cellRenderer: (p: ICellRendererParams<AppUser>) => {
+        const u = p.data;
+        if (!u) return '';
+        const cls = u.active
+          ? 'bg-success-50 text-success-600 dark:bg-success-500/15 dark:text-success-400'
+          : 'bg-error-50 text-error-600 dark:bg-error-500/15 dark:text-error-400';
+        return `<span class="rounded-full px-2.5 py-1 text-xs font-medium ${cls}">${u.active ? 'Activo' : 'Inactivo'}</span>`;
+      },
+    },
+    {
+      headerName: 'Creado',
+      field: 'createdAt',
+      valueFormatter: (p) => this.fmtDate(p.value),
+    },
+    {
+      headerName: 'Acciones',
+      colId: 'acciones',
+      sortable: false,
+      minWidth: 170,
+      cellRenderer: (p: ICellRendererParams<AppUser>) => {
+        const u = p.data;
+        if (!u) return '';
+        const edit = `<button data-action="edit" class="rounded border border-gray-300 px-2 py-1 text-xs dark:border-gray-700 dark:text-gray-300">Editar</button>`;
+        const toggle = u.active
+          ? `<button data-action="deactivate" class="rounded border border-error-300 px-2 py-1 text-xs text-error-600">Desactivar</button>`
+          : `<button data-action="activate" class="rounded border border-success-300 px-2 py-1 text-xs text-success-600">Activar</button>`;
+        return `<div class="flex gap-2">${edit}${toggle}</div>`;
+      },
+    },
+  ];
+
   constructor(private http: HttpClient) {}
 
   ngOnInit() {
@@ -107,6 +142,15 @@ export class VentraUsuariosComponent implements OnInit {
 
   load() {
     this.http.get<AppUser[]>(`${API_URL}/users`).subscribe((u) => (this.users = u));
+  }
+
+  onCell(e: CellClickedEvent<AppUser>) {
+    const target = e.event?.target as HTMLElement | null;
+    const action = target?.closest<HTMLElement>('[data-action]')?.dataset['action'];
+    if (!action || !e.data) return;
+    if (action === 'edit') this.openForm(e.data);
+    else if (action === 'deactivate') this.deactivate(e.data);
+    else if (action === 'activate') this.activate(e.data);
   }
 
   openForm(u?: AppUser) {
@@ -155,5 +199,11 @@ export class VentraUsuariosComponent implements OnInit {
 
   activate(u: AppUser) {
     this.http.patch(`${API_URL}/users/${u.id}`, { active: true }).subscribe(() => this.load());
+  }
+
+  private fmtDate(v?: string | null): string {
+    if (!v) return '';
+    const d = new Date(v);
+    return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
   }
 }

@@ -1,14 +1,17 @@
-import { Component, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, OnInit, computed, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { AgGridAngular } from 'ag-grid-angular';
+import type { CellClickedEvent, ColDef, ICellRendererParams } from 'ag-grid-community';
 import { ApiService, Category, Product, Promotion, PromoType } from '../../core/api.service';
 import { AuthService } from '../../core/auth.service';
+import { GRID_TEXT, ventraGridTheme } from '../../core/grid';
+import { ThemeService } from '../../core/theme.service';
 import { PageHeaderComponent } from '../../shared/components/ventra/page-header.component';
 
 @Component({
   selector: 'app-ventra-ofertas',
   standalone: true,
-  imports: [CommonModule, FormsModule, PageHeaderComponent],
+  imports: [FormsModule, PageHeaderComponent, AgGridAngular],
   template: `
     <app-page-header title="Ofertas" subtitle="Descuentos, packs y promociones aplicados automáticamente en el POS">
       @if (auth.isAdmin) {
@@ -119,63 +122,19 @@ import { PageHeaderComponent } from '../../shared/components/ventra/page-header.
       </div>
     }
 
-    <div class="rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900 max-h-[70vh] overflow-auto">
-      <table class="w-full min-w-[900px] text-sm">
-        <thead class="sticky top-0 z-10">
-          <tr class="border-b border-gray-100 bg-white text-left dark:border-gray-800 dark:bg-gray-900">
-            <th class="px-5 py-3 text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">Oferta</th>
-            <th class="px-5 py-3 text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">Regla</th>
-            <th class="px-5 py-3 text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">Alcance</th>
-            <th class="px-5 py-3 text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">Vigencia</th>
-            <th class="px-5 py-3 text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">Estado</th>
-            @if (auth.isAdmin) { <th class="px-5 py-3 text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">Acciones</th> }
-          </tr>
-        </thead>
-        <tbody>
-          @for (pr of promos; track pr.id) {
-            <tr class="border-b border-gray-50 hover:bg-gray-50 dark:border-gray-800/50 dark:hover:bg-white/[0.03]">
-              <td class="px-5 py-3">
-                <p class="font-medium text-gray-800 dark:text-white/90">{{ pr.name }}</p>
-                <p class="text-xs text-gray-400">{{ typeLabel(pr.type) }}</p>
-              </td>
-              <td class="px-5 py-3 font-medium text-brand-500">{{ rule(pr) }}</td>
-              <td class="px-5 py-3 text-gray-600 dark:text-gray-400">{{ scope(pr) }}</td>
-              <td class="px-5 py-3 text-gray-600 dark:text-gray-400">{{ validity(pr) }}</td>
-              <td class="px-5 py-3">
-                <span class="rounded-full px-2.5 py-0.5 text-xs font-medium"
-                  [class]="pr.active
-                    ? 'bg-success-50 text-success-600 dark:bg-success-500/15 dark:text-success-400'
-                    : 'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400'">
-                  {{ pr.active ? 'Activa' : 'Inactiva' }}
-                </span>
-              </td>
-              @if (auth.isAdmin) {
-                <td class="px-5 py-3">
-                  <div class="flex gap-2 text-xs">
-                    <button (click)="openForm(pr)" class="rounded border border-gray-300 px-2 py-1 dark:border-gray-700 dark:text-gray-300">Editar</button>
-                    <button (click)="toggle(pr)"
-                      class="rounded border px-2 py-1"
-                      [class]="pr.active ? 'border-error-300 text-error-600' : 'border-success-500 text-success-600'">
-                      {{ pr.active ? 'Desactivar' : 'Activar' }}
-                    </button>
-                  </div>
-                </td>
-              }
-            </tr>
-          } @empty {
-            <tr>
-              <td colspan="6" class="px-5 py-10 text-center">
-                <svg class="mx-auto h-10 w-10 text-gray-300" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M9.568 3H5.25A2.25 2.25 0 0 0 3 5.25v4.318c0 .597.237 1.17.659 1.591l9.581 9.581c.699.699 1.78.872 2.607.33a18.095 18.095 0 0 0 5.223-5.223c.542-.827.369-1.908-.33-2.607L11.16 3.66A2.25 2.25 0 0 0 9.568 3Z" />
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M6 6h.008v.008H6V6Z" />
-                </svg>
-                <p class="mt-2 text-sm text-gray-400">Sin ofertas registradas</p>
-              </td>
-            </tr>
-          }
-        </tbody>
-      </table>
-    </div>
+    <ag-grid-angular
+      class="w-full"
+      [theme]="theme()"
+      [rowData]="promos"
+      [columnDefs]="cols"
+      [defaultColDef]="defaultColDef"
+      domLayout="autoHeight"
+      [localeText]="GRID_TEXT"
+      [pagination]="true"
+      [paginationPageSize]="20"
+      [paginationPageSizeSelector]="false"
+      (cellClicked)="onCell($event)"
+    />
   `,
 })
 export class VentraOfertasComponent implements OnInit {
@@ -190,10 +149,84 @@ export class VentraOfertasComponent implements OnInit {
   startsAt = '';
   endsAt = '';
 
+  private themeSvc = inject(ThemeService);
+  theme = computed(() => ventraGridTheme(this.themeSvc.isDark()));
+  readonly GRID_TEXT = GRID_TEXT;
+
+  defaultColDef: ColDef = { sortable: true, resizable: true, flex: 1, minWidth: 110 };
+  cols: ColDef<Promotion>[];
+
   constructor(
     public api: ApiService,
     public auth: AuthService,
-  ) {}
+  ) {
+    const cols: ColDef<Promotion>[] = [
+      {
+        headerName: 'Oferta',
+        colId: 'oferta',
+        minWidth: 200,
+        autoHeight: true,
+        valueGetter: (p) => p.data?.name ?? '',
+        cellRenderer: (p: ICellRendererParams<Promotion>) => {
+          const pr = p.data;
+          if (!pr) return '';
+          return `<div class="py-1 leading-snug">
+              <p class="font-medium text-gray-800 dark:text-white/90">${this.esc(pr.name)}</p>
+              <p class="text-xs text-gray-400">${this.esc(this.typeLabel(pr.type))}</p>
+            </div>`;
+        },
+      },
+      {
+        headerName: 'Regla',
+        colId: 'regla',
+        valueGetter: (p) => (p.data ? this.rule(p.data) : ''),
+        cellClass: 'font-medium text-brand-500',
+      },
+      {
+        headerName: 'Alcance',
+        colId: 'alcance',
+        minWidth: 160,
+        valueGetter: (p) => (p.data ? this.scope(p.data) : ''),
+      },
+      {
+        headerName: 'Vigencia',
+        colId: 'vigencia',
+        minWidth: 150,
+        valueGetter: (p) => (p.data ? this.validity(p.data) : ''),
+      },
+      {
+        headerName: 'Estado',
+        field: 'active',
+        valueGetter: (p) => (p.data?.active ? 'Activa' : 'Inactiva'),
+        cellRenderer: (p: ICellRendererParams<Promotion>) => {
+          const pr = p.data;
+          if (!pr) return '';
+          const cls = pr.active
+            ? 'bg-success-50 text-success-600 dark:bg-success-500/15 dark:text-success-400'
+            : 'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400';
+          return `<span class="rounded-full px-2.5 py-0.5 text-xs font-medium ${cls}">${pr.active ? 'Activa' : 'Inactiva'}</span>`;
+        },
+      },
+    ];
+    if (this.auth.isAdmin) {
+      cols.push({
+        headerName: 'Acciones',
+        colId: 'acciones',
+        sortable: false,
+        minWidth: 170,
+        cellRenderer: (p: ICellRendererParams<Promotion>) => {
+          const pr = p.data;
+          if (!pr) return '';
+          const edit = `<button data-action="edit" class="rounded border border-gray-300 px-2 py-1 text-xs dark:border-gray-700 dark:text-gray-300">Editar</button>`;
+          const toggle = pr.active
+            ? `<button data-action="toggle" class="rounded border border-error-300 px-2 py-1 text-xs text-error-600">Desactivar</button>`
+            : `<button data-action="toggle" class="rounded border border-success-500 px-2 py-1 text-xs text-success-600">Activar</button>`;
+          return `<div class="flex gap-2">${edit}${toggle}</div>`;
+        },
+      });
+    }
+    this.cols = cols;
+  }
 
   ngOnInit() {
     this.load();
@@ -203,6 +236,14 @@ export class VentraOfertasComponent implements OnInit {
 
   load() {
     this.api.promotions().subscribe((p) => (this.promos = p));
+  }
+
+  onCell(e: CellClickedEvent<Promotion>) {
+    const target = e.event?.target as HTMLElement | null;
+    const action = target?.closest<HTMLElement>('[data-action]')?.dataset['action'];
+    if (!action || !e.data) return;
+    if (action === 'edit') this.openForm(e.data);
+    else if (action === 'toggle') this.toggle(e.data);
   }
 
   clp(n: number) {
@@ -331,5 +372,11 @@ export class VentraOfertasComponent implements OnInit {
 
   toggle(p: Promotion) {
     this.api.updatePromotion(p.id, { active: !p.active }).subscribe(() => this.load());
+  }
+
+  private esc(s: unknown): string {
+    return String(s ?? '').replace(/[&<>"']/g, (c) =>
+      ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!,
+    );
   }
 }

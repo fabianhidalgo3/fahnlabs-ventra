@@ -1,13 +1,16 @@
-import { Component, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, OnInit, computed, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { AgGridAngular } from 'ag-grid-angular';
+import type { ColDef, ICellRendererParams } from 'ag-grid-community';
 import { ApiService, BatchAlert, whatsappUrl } from '../../core/api.service';
+import { GRID_TEXT, ventraGridTheme } from '../../core/grid';
+import { ThemeService } from '../../core/theme.service';
 import { PageHeaderComponent } from '../../shared/components/ventra/page-header.component';
 
 @Component({
   selector: 'app-ventra-vencimientos',
   standalone: true,
-  imports: [CommonModule, FormsModule, PageHeaderComponent],
+  imports: [FormsModule, PageHeaderComponent, AgGridAngular],
   template: `
     <app-page-header title="Vencimientos" subtitle="Lotes próximos a vencer por nivel de urgencia">
       @if (alerts.length) {
@@ -33,48 +36,64 @@ import { PageHeaderComponent } from '../../shared/components/ventra/page-header.
       <span class="text-sm text-gray-400">{{ alerts.length }} lotes</span>
     </div>
 
-    <div class="rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900 overflow-x-auto">
-      <table class="w-full text-sm">
-        <thead>
-          <tr class="border-b border-gray-100 text-left dark:border-gray-800">
-            <th class="px-5 py-3 text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">Producto</th><th class="px-5 py-3 text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">Lote</th><th class="px-5 py-3 text-right text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">Cantidad</th>
-            <th class="px-5 py-3 text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">Vence</th><th class="px-5 py-3 text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">Estado</th>
-          </tr>
-        </thead>
-        <tbody>
-          @for (a of alerts; track a.id) {
-            <tr class="border-b border-gray-50 dark:border-gray-800/50">
-              <td class="px-5 py-3">
-                <p class="font-medium text-gray-800 dark:text-white/90">{{ a.product.name }}</p>
-                <p class="text-xs text-gray-400">{{ a.product.sku }} · {{ a.product.barcode }}</p>
-              </td>
-              <td class="px-5 py-3 text-gray-600 dark:text-gray-400">{{ a.lotCode }}</td>
-              <td class="px-5 py-3 text-right text-gray-700 dark:text-gray-300">{{ a.quantity }}</td>
-              <td class="px-5 py-3 text-gray-600 dark:text-gray-400">{{ a.expiresAt | date: 'dd/MM/yyyy' }}</td>
-              <td class="px-5 py-3">
-                <span class="rounded-full px-2.5 py-0.5 text-xs font-medium" [class]="badge(a.level)">
-                  {{ label(a) }}
-                </span>
-              </td>
-            </tr>
-          } @empty {
-            <tr>
-              <td colspan="5" class="px-5 py-10 text-center">
-                <svg class="mx-auto h-10 w-10 text-gray-300" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
-                </svg>
-                <p class="mt-2 text-sm text-gray-400">Sin lotes por vencer en este rango</p>
-              </td>
-            </tr>
-          }
-        </tbody>
-      </table>
-    </div>
+    <ag-grid-angular
+      class="w-full"
+      [theme]="theme()"
+      [rowData]="alerts"
+      [columnDefs]="cols"
+      [defaultColDef]="defaultColDef"
+      domLayout="autoHeight"
+      [localeText]="GRID_TEXT"
+      [pagination]="true"
+      [paginationPageSize]="20"
+      [paginationPageSizeSelector]="false"
+    />
   `,
 })
 export class VentraVencimientosComponent implements OnInit {
   alerts: BatchAlert[] = [];
   days = 30;
+
+  private themeSvc = inject(ThemeService);
+  theme = computed(() => ventraGridTheme(this.themeSvc.isDark()));
+  readonly GRID_TEXT = GRID_TEXT;
+
+  defaultColDef: ColDef = { sortable: true, resizable: true, flex: 1, minWidth: 110 };
+
+  cols: ColDef<BatchAlert>[] = [
+    {
+      headerName: 'Producto',
+      colId: 'producto',
+      minWidth: 220,
+      autoHeight: true,
+      valueGetter: (p) => p.data?.product?.name ?? '',
+      cellRenderer: (p: ICellRendererParams<BatchAlert>) => {
+        const a = p.data;
+        if (!a) return '';
+        return `<div class="py-1 leading-snug">
+            <p class="font-medium text-gray-800 dark:text-white/90">${this.esc(a.product.name)}</p>
+            <p class="text-xs text-gray-400">${this.esc(a.product.sku)} · ${this.esc(a.product.barcode)}</p>
+          </div>`;
+      },
+    },
+    { headerName: 'Lote', field: 'lotCode' },
+    { headerName: 'Cantidad', field: 'quantity', type: 'rightAligned' },
+    {
+      headerName: 'Vence',
+      field: 'expiresAt',
+      valueFormatter: (p) => this.fmtDate(p.value),
+    },
+    {
+      headerName: 'Estado',
+      colId: 'estado',
+      valueGetter: (p) => (p.data ? this.label(p.data) : ''),
+      cellRenderer: (p: ICellRendererParams<BatchAlert>) => {
+        const a = p.data;
+        if (!a) return '';
+        return `<span class="rounded-full px-2.5 py-0.5 text-xs font-medium ${this.badge(a.level)}">${this.esc(this.label(a))}</span>`;
+      },
+    },
+  ];
 
   constructor(private api: ApiService) {}
 
@@ -110,5 +129,17 @@ export class VentraVencimientosComponent implements OnInit {
       .slice(0, 20)
       .map((a) => `• ${a.product.name} (lote ${a.lotCode}, ${a.quantity} un.): ${a.daysToExpiry < 0 ? 'VENCIDO' : 'vence en ' + a.daysToExpiry + ' días'}`);
     return whatsappUrl(`⚠️ Vencimientos próximos — Ventra\n\n${lines.join('\n')}`);
+  }
+
+  private fmtDate(v?: string | null): string {
+    if (!v) return '';
+    const d = new Date(v);
+    return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
+  }
+
+  private esc(s: unknown): string {
+    return String(s ?? '').replace(/[&<>"']/g, (c) =>
+      ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!,
+    );
   }
 }
