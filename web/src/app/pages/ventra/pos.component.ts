@@ -1,6 +1,7 @@
 import { Component, ElementRef, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { ClpMonedaDirective } from '../../shared/directives/clp-moneda.directive';
 import { Subscription } from 'rxjs';
 import { ApiService, Product, Category, Sale, PromoQuote, whatsappUrl } from '../../core/api.service';
 import { PosBusService } from '../../core/pos-bus.service';
@@ -13,7 +14,7 @@ interface CartLine {
 @Component({
   selector: 'app-ventra-pos',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, ClpMonedaDirective],
   template: `
     <div class="grid grid-cols-1 gap-4 xl:grid-cols-5">
       <!-- ===== Catálogo (izquierda) ===== -->
@@ -39,7 +40,26 @@ interface CartLine {
 
         @if (error) { <p class="mb-2 text-sm text-error-600">{{ error }}</p> }
 
-        <div class="mb-2 flex items-center justify-end gap-1">
+        <div class="mb-2 flex flex-wrap items-center justify-between gap-2">
+          <div class="flex flex-wrap items-center gap-2">
+            <select [(ngModel)]="orden" (change)="filterGrid()"
+              class="h-9 rounded-lg border border-gray-300 bg-white px-2 text-xs font-medium text-gray-600 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300">
+              <option value="nombre">Nombre A–Z</option>
+              <option value="precio-asc">Precio: menor a mayor</option>
+              <option value="precio-desc">Precio: mayor a menor</option>
+            </select>
+            <span class="text-xs text-gray-400">Precio</span>
+            <input clpMoneda type="text" inputmode="numeric" [(ngModel)]="precioMin" (ngModelChange)="filterGrid()" placeholder="mín $"
+              class="h-9 w-20 rounded-lg border border-gray-300 bg-white px-2 text-right text-xs dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300" />
+            <span class="text-xs text-gray-400">–</span>
+            <input clpMoneda type="text" inputmode="numeric" [(ngModel)]="precioMax" (ngModelChange)="filterGrid()" placeholder="máx $"
+              class="h-9 w-20 rounded-lg border border-gray-300 bg-white px-2 text-right text-xs dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300" />
+            @if (precioMin || precioMax) {
+              <button (click)="precioMin = undefined; precioMax = undefined; filterGrid()"
+                class="text-xs text-brand-500 hover:underline">Limpiar</button>
+            }
+          </div>
+          <div class="flex items-center gap-1">
           <button (click)="setVista('grilla')" title="Vista grilla"
             class="rounded-lg p-2" [class]="vista === 'grilla' ? 'bg-brand-50 text-brand-600 dark:bg-brand-500/15 dark:text-brand-400' : 'text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
@@ -48,6 +68,7 @@ interface CartLine {
             class="rounded-lg p-2" [class]="vista === 'lista' ? 'bg-brand-50 text-brand-600 dark:bg-brand-500/15 dark:text-brand-400' : 'text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M8 6h13M8 12h13M8 18h13"/><circle cx="4" cy="6" r="1" fill="currentColor"/><circle cx="4" cy="12" r="1" fill="currentColor"/><circle cx="4" cy="18" r="1" fill="currentColor"/></svg>
           </button>
+          </div>
         </div>
 
         @if (vista === 'grilla') {
@@ -145,7 +166,7 @@ interface CartLine {
                 <button (click)="setDiscountPct(pct)"
                   class="rounded-lg border border-gray-300 px-2 py-1 text-xs text-gray-500 dark:border-gray-700 dark:text-gray-400">{{ pct }}%</button>
               }
-              <input type="number" [(ngModel)]="discount" (ngModelChange)="clampDiscount()" min="0" step="1" inputmode="numeric" placeholder="$"
+              <input clpMoneda type="text" [(ngModel)]="discount" (ngModelChange)="clampDiscount()" inputmode="numeric" placeholder="$"
                 class="h-9 w-24 rounded-lg border border-gray-300 bg-white px-2 text-right text-sm dark:border-gray-700 dark:bg-gray-900 dark:text-white/90" />
             </div>
           </div>
@@ -179,7 +200,7 @@ interface CartLine {
             <div class="mt-3 rounded-xl bg-gray-50 p-3 dark:bg-gray-800/60">
               <div class="flex items-center justify-between gap-2">
                 <span class="text-sm font-medium text-gray-600 dark:text-gray-300">Paga con</span>
-                <input type="number" [(ngModel)]="tendered" min="0" step="1" inputmode="numeric" [placeholder]="clp(totalFinal)"
+                <input clpMoneda type="text" [(ngModel)]="tendered" inputmode="numeric" [placeholder]="clp(totalFinal)"
                   class="h-10 w-32 rounded-lg border border-gray-300 bg-white px-2 text-right text-base font-semibold dark:border-gray-700 dark:bg-gray-900 dark:text-white/90" />
               </div>
               <div class="mt-2 flex flex-wrap gap-1.5">
@@ -245,6 +266,9 @@ export class VentraPosComponent implements OnInit, OnDestroy {
   quickBills = [1000, 2000, 5000, 10000, 20000];
   parked: { name: string; lines: CartLine[] }[] = [];
   vista: 'grilla' | 'lista' = (localStorage.getItem('ventra_pos_vista') as 'grilla' | 'lista') || 'grilla';
+  orden: 'nombre' | 'precio-asc' | 'precio-desc' = 'nombre';
+  precioMin?: number;
+  precioMax?: number;
   private busSub?: Subscription;
   @ViewChild('scanInput') scanInput?: ElementRef<HTMLInputElement>;
 
@@ -356,11 +380,18 @@ export class VentraPosComponent implements OnInit, OnDestroy {
 
   filterGrid() {
     const q = this.scanCode.trim().toLowerCase();
+    const min = this.precioMin ?? 0;
+    const max = this.precioMax ?? Infinity;
     this.visible = this.products.filter(
       (p) =>
         (!this.catId || p.categoryId === this.catId) &&
+        Number(p.price) >= min &&
+        Number(p.price) <= max &&
         (!q || p.name.toLowerCase().includes(q) || p.sku.toLowerCase().includes(q) || p.barcode.includes(q)),
     );
+    if (this.orden === 'precio-asc') this.visible.sort((a, b) => Number(a.price) - Number(b.price));
+    else if (this.orden === 'precio-desc') this.visible.sort((a, b) => Number(b.price) - Number(a.price));
+    else this.visible.sort((a, b) => a.name.localeCompare(b.name, 'es'));
   }
 
   addProduct(p: Product) {

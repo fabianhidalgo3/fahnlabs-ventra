@@ -2,6 +2,7 @@ import { Router } from '@angular/router';
 import { Component, OnInit, computed, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { ClpMonedaDirective } from '../../shared/directives/clp-moneda.directive';
 import { AgGridAngular } from 'ag-grid-angular';
 import type { CellClickedEvent, ColDef, ICellRendererParams } from 'ag-grid-community';
 import { ApiService, Product, Category } from '../../core/api.service';
@@ -18,7 +19,8 @@ const esc = (v: unknown): string =>
 @Component({
   selector: 'app-ventra-productos',
   standalone: true,
-  imports: [CommonModule, FormsModule, PageHeaderComponent,
+  imports: [CommonModule, FormsModule,
+    ClpMonedaDirective, PageHeaderComponent,
     CodigoModalComponent, AgGridAngular],
   template: `
     <app-page-header title="Productos" subtitle="Inventario, precios, códigos y vencimientos">
@@ -85,7 +87,7 @@ const esc = (v: unknown): string =>
             @if (errores['name']) { <p class="mt-1 text-xs text-error-500">{{ errores['name'] }}</p> }
           </div>
           <div>
-            <input type="number" [(ngModel)]="form.price" placeholder="Precio CLP * (entero)" inputmode="numeric" min="1" step="1" required
+            <input clpMoneda type="text" [(ngModel)]="form.price" placeholder="Precio CLP * (entero)" inputmode="numeric" required
               class="h-11 w-full rounded-lg border bg-white px-3 text-sm dark:bg-gray-900 dark:text-white/90"
               [class]="errores['price'] ? 'border-error-400' : 'border-gray-300 dark:border-gray-700'" />
             @if (errores['price']) { <p class="mt-1 text-xs text-error-500">{{ errores['price'] }}</p> }

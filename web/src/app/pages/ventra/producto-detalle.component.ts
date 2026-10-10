@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { ClpMonedaDirective } from '../../shared/directives/clp-moneda.directive';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { ApiService, Product, Category } from '../../core/api.service';
 import { AuthService } from '../../core/auth.service';
@@ -27,7 +28,8 @@ type ProductoFull = Product & { batches?: Batch[]; priceLogs?: PriceLog[] };
 @Component({
   selector: 'app-ventra-producto-detalle',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule, PageHeaderComponent, CodigoModalComponent],
+  imports: [CommonModule, FormsModule,
+    ClpMonedaDirective, RouterModule, PageHeaderComponent, CodigoModalComponent],
   template: `
     @if (p) {
       <app-page-header [title]="p.name" [subtitle]="(p.category?.name ?? 'Sin categoría') + ' · ' + p.sku">
@@ -113,7 +115,7 @@ type ProductoFull = Product & { batches?: Batch[]; priceLogs?: PriceLog[] };
                 </div>
                 <div>
                   <label class="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">Precio de venta CLP *</label>
-                  <input type="number" [(ngModel)]="form.price" placeholder="0" min="1" step="1" inputmode="numeric" class="h-11 w-full rounded-lg border border-gray-300 bg-white px-3 text-sm dark:border-gray-700 dark:bg-gray-950 dark:text-white/90" />
+                  <input clpMoneda type="text" [(ngModel)]="form.price" placeholder="0" inputmode="numeric" class="h-11 w-full rounded-lg border border-gray-300 bg-white px-3 text-sm dark:border-gray-700 dark:bg-gray-950 dark:text-white/90" />
                 </div>
                 <div>
                   <label class="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">Stock actual</label>
@@ -121,7 +123,7 @@ type ProductoFull = Product & { batches?: Batch[]; priceLogs?: PriceLog[] };
                 </div>
                 <div>
                   <label class="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">Costo CLP</label>
-                  <input type="number" [(ngModel)]="form.cost" placeholder="0" min="0" step="1" inputmode="numeric" class="h-11 w-full rounded-lg border border-gray-300 bg-white px-3 text-sm dark:border-gray-700 dark:bg-gray-950 dark:text-white/90" />
+                  <input clpMoneda type="text" [(ngModel)]="form.cost" placeholder="0" inputmode="numeric" class="h-11 w-full rounded-lg border border-gray-300 bg-white px-3 text-sm dark:border-gray-700 dark:bg-gray-950 dark:text-white/90" />
                 </div>
                 <div>
                   <label class="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">Stock mínimo (alerta)</label>

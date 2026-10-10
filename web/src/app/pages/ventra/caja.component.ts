@@ -1,13 +1,15 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { ClpMonedaDirective } from '../../shared/directives/clp-moneda.directive';
 import { ApiService, CashSummary, CashSession } from '../../core/api.service';
 import { PageHeaderComponent } from '../../shared/components/ventra/page-header.component';
 
 @Component({
   selector: 'app-ventra-caja',
   standalone: true,
-  imports: [CommonModule, FormsModule, PageHeaderComponent],
+  imports: [CommonModule, FormsModule,
+    ClpMonedaDirective, PageHeaderComponent],
   template: `
     <app-page-header title="Caja" subtitle="Apertura de turno, arqueo y cierre" />
 
@@ -21,7 +23,7 @@ import { PageHeaderComponent } from '../../shared/components/ventra/page-header.
             <div class="flex items-end gap-3">
               <div>
                 <label class="mb-1 block text-sm text-gray-500">Fondo inicial $</label>
-                <input type="number" [(ngModel)]="openingCash" min="0" step="1" inputmode="numeric" placeholder="Ej: 20000"
+                <input clpMoneda type="text" [(ngModel)]="openingCash" inputmode="numeric" placeholder="Ej: 20000"
                   class="h-12 w-44 rounded-lg border bg-white px-3 text-lg font-semibold dark:bg-gray-900 dark:text-white/90"
                   [class]="montoInvalido(openingCash) ? 'border-error-400' : 'border-gray-300 dark:border-gray-700'" />
               </div>
@@ -100,7 +102,7 @@ import { PageHeaderComponent } from '../../shared/components/ventra/page-header.
               <div class="flex flex-wrap items-end gap-3">
                 <div>
                   <label class="mb-1 block text-sm text-gray-500">Efectivo contado $</label>
-                  <input type="number" [(ngModel)]="countedCash" min="0" step="1" inputmode="numeric" placeholder="Cuenta el cajón"
+                  <input clpMoneda type="text" [(ngModel)]="countedCash" inputmode="numeric" placeholder="Cuenta el cajón"
                     class="h-12 w-44 rounded-lg border bg-white px-3 text-lg font-semibold dark:bg-gray-900 dark:text-white/90"
                     [class]="montoInvalido(countedCash) ? 'border-error-400' : 'border-gray-300 dark:border-gray-700'" />
                 </div>

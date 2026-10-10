@@ -1,5 +1,6 @@
 import { Component, OnInit, computed, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { ClpMonedaDirective } from '../../shared/directives/clp-moneda.directive';
 import { AgGridAngular } from 'ag-grid-angular';
 import type { CellClickedEvent, ColDef, ICellRendererParams } from 'ag-grid-community';
 import { ApiService, Category, Product, Promotion, PromoType } from '../../core/api.service';
@@ -11,7 +12,8 @@ import { PageHeaderComponent } from '../../shared/components/ventra/page-header.
 @Component({
   selector: 'app-ventra-ofertas',
   standalone: true,
-  imports: [FormsModule, PageHeaderComponent, AgGridAngular],
+  imports: [FormsModule,
+    ClpMonedaDirective, PageHeaderComponent, AgGridAngular],
   template: `
     <app-page-header title="Ofertas" subtitle="Descuentos, packs y promociones aplicados automáticamente en el POS">
       @if (auth.isAdmin) {
@@ -62,7 +64,7 @@ import { PageHeaderComponent } from '../../shared/components/ventra/page-header.
             </div>
             <div>
               <label class="mb-1 block text-sm text-gray-500">Precio del pack (CLP entero)</label>
-              <input type="number" [(ngModel)]="form.packPrice" min="1" step="1" inputmode="numeric" placeholder="Ej: 5000"
+              <input clpMoneda type="text" [(ngModel)]="form.packPrice" inputmode="numeric" placeholder="Ej: 5000"
                 class="h-11 w-full rounded-lg border bg-white px-3 text-sm dark:bg-gray-900 dark:text-white/90"
                 [class]="errores['packPrice'] ? 'border-error-400' : 'border-gray-300 dark:border-gray-700'" />
               @if (errores['packPrice']) { <p class="mt-1 text-xs text-error-500">{{ errores['packPrice'] }}</p> }

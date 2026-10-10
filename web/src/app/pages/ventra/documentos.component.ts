@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { ClpMonedaDirective } from '../../shared/directives/clp-moneda.directive';
 import { HttpClient } from '@angular/common/http';
 import { API_URL, ApiService } from '../../core/api.service';
 import { AuthService } from '../../core/auth.service';
@@ -21,7 +22,8 @@ export interface PurchaseDoc {
 @Component({
   selector: 'app-ventra-documentos',
   standalone: true,
-  imports: [CommonModule, FormsModule, PageHeaderComponent],
+  imports: [CommonModule, FormsModule,
+    ClpMonedaDirective, PageHeaderComponent],
   template: `
     <app-page-header title="Guías y facturas" subtitle="Respaldo fotográfico de documentos de compra">
       <button (click)="showForm = !showForm" class="inline-flex h-10 items-center gap-2 rounded-lg bg-brand-500 px-4 text-sm font-medium text-white shadow-theme-xs hover:bg-brand-600 disabled:opacity-40">
@@ -55,7 +57,7 @@ export interface PurchaseDoc {
           <input [(ngModel)]="form.supplier" placeholder="Proveedor" class="h-11 rounded-lg border border-gray-300 bg-white px-3 text-sm dark:border-gray-700 dark:bg-gray-900 dark:text-white/90" />
           <input [(ngModel)]="form.folio" placeholder="Folio / N° documento" class="h-11 rounded-lg border border-gray-300 bg-white px-3 text-sm dark:border-gray-700 dark:bg-gray-900 dark:text-white/90" />
           <input [(ngModel)]="form.docDate" type="date" class="h-11 rounded-lg border border-gray-300 bg-white px-3 text-sm dark:border-gray-700 dark:bg-gray-900 dark:text-white/90" />
-          <input [(ngModel)]="form.amount" type="number" placeholder="Monto total CLP (entero)" inputmode="numeric" min="0" step="1" class="h-11 rounded-lg border border-gray-300 bg-white px-3 text-sm dark:border-gray-700 dark:bg-gray-900 dark:text-white/90" />
+          <input clpMoneda [(ngModel)]="form.amount" type="text" placeholder="Monto total CLP (entero)" inputmode="numeric" class="h-11 rounded-lg border border-gray-300 bg-white px-3 text-sm dark:border-gray-700 dark:bg-gray-900 dark:text-white/90" />
           <input [(ngModel)]="form.note" placeholder="Nota (opcional)" class="h-11 rounded-lg border border-gray-300 bg-white px-3 text-sm dark:border-gray-700 dark:bg-gray-900 dark:text-white/90" />
           <div class="md:col-span-3">
             <label class="mb-1 block text-sm text-gray-500">Foto del documento * (desde el teléfono se abre la cámara)</label>
