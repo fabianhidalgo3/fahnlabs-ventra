@@ -46,6 +46,6 @@ export class PromotionsController {
   @Roles('ADMIN')
   @Delete(':id')
   remove(@Param('id') id: string) {
-    return this.service.deactivate(id);
+    return this.service.remove(id);
   }
 }

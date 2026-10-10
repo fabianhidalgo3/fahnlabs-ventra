@@ -188,6 +188,9 @@ export class ApiService {
   createPromotion(data: Partial<Promotion> & { productIds?: string[] }) {
     return this.http.post<Promotion>(`${API_URL}/promotions`, data);
   }
+  deletePromotion(id: string) {
+    return this.http.delete<{ deleted: boolean }>(`${API_URL}/promotions/${id}`);
+  }
   updatePromotion(id: string, data: Partial<Promotion> & { productIds?: string[] }) {
     return this.http.patch<Promotion>(`${API_URL}/promotions/${id}`, data);
   }

@@ -219,9 +219,10 @@ export class VentraOfertasComponent implements OnInit {
           if (!pr) return '';
           const edit = `<button data-action="edit" class="rounded border border-gray-300 px-2 py-1 text-xs dark:border-gray-700 dark:text-gray-300">Editar</button>`;
           const toggle = pr.active
-            ? `<button data-action="toggle" class="rounded border border-error-300 px-2 py-1 text-xs text-error-600">Desactivar</button>`
+            ? `<button data-action="toggle" class="rounded border border-warning-500 px-2 py-1 text-xs text-warning-600">Desactivar</button>`
             : `<button data-action="toggle" class="rounded border border-success-500 px-2 py-1 text-xs text-success-600">Activar</button>`;
-          return `<div class="flex gap-2">${edit}${toggle}</div>`;
+          const del = `<button data-action="delete" class="rounded border border-error-300 px-2 py-1 text-xs text-error-600">Eliminar</button>`;
+          return `<div class="flex gap-2">${edit}${toggle}${del}</div>`;
         },
       });
     }
@@ -244,6 +245,7 @@ export class VentraOfertasComponent implements OnInit {
     if (!action || !e.data) return;
     if (action === 'edit') this.openForm(e.data);
     else if (action === 'toggle') this.toggle(e.data);
+    else if (action === 'delete') this.remove(e.data);
   }
 
   clp(n: number) {
@@ -372,6 +374,11 @@ export class VentraOfertasComponent implements OnInit {
 
   toggle(p: Promotion) {
     this.api.updatePromotion(p.id, { active: !p.active }).subscribe(() => this.load());
+  }
+
+  remove(p: Promotion) {
+    if (!confirm(`¿Eliminar definitivamente la oferta "${p.name}"? Esta acción no se puede deshacer (si solo quieres pausarla, usa Desactivar).`)) return;
+    this.api.deletePromotion(p.id).subscribe(() => this.load());
   }
 
   private esc(s: unknown): string {

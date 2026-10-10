@@ -146,7 +146,17 @@ export class PromotionsService {
     });
   }
 
-  /** "Eliminar" = desactivar (las ventas históricas pueden referenciarla). */
+  /** Borrado definitivo: elimina la promo y su relación con productos. */
+  async remove(id: string) {
+    await this.get(id);
+    await this.prisma.$transaction([
+      this.prisma.promotionProduct.deleteMany({ where: { promotionId: id } }),
+      this.prisma.promotion.delete({ where: { id } }),
+    ]);
+    return { deleted: true };
+  }
+
+  /** Desactivar: la oferta queda apagada pero recuperable. */
   async deactivate(id: string) {
     await this.get(id);
     return this.prisma.promotion.update({
