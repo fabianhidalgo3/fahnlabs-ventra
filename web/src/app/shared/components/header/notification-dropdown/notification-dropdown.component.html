@@ -4,11 +4,11 @@
     class="relative flex h-11 w-11 items-center justify-center rounded-full border border-gray-200 text-gray-500 hover:bg-gray-100 dark:border-gray-800 dark:text-gray-400 dark:hover:bg-white/[0.05]"
     aria-label="Alertas de vencimiento"
   >
-    @if (alerts.length) {
+    @if (unread > 0) {
       <span
         class="absolute -right-0.5 -top-0.5 flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-[10px] font-bold text-white"
-        [class]="criticas ? 'bg-error-500' : 'bg-warning-500'"
-        >{{ alerts.length }}</span
+        [class]="criticasNoLeidas ? 'bg-error-500' : 'bg-warning-500'"
+        >{{ unread }}</span
       >
     }
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
@@ -23,21 +23,41 @@
       class="absolute right-0 z-50 mt-2 w-80 rounded-2xl border border-gray-200 bg-white p-2 shadow-lg dark:border-gray-800 dark:bg-gray-900"
     >
       <div class="flex items-center justify-between border-b border-gray-100 px-3 py-2.5 dark:border-gray-800">
-        <p class="text-sm font-semibold text-gray-900 dark:text-white">Vencimientos próximos</p>
-        <span class="text-xs text-gray-400">15 días</span>
+        <p class="text-sm font-semibold text-gray-900 dark:text-white">
+          Vencimientos próximos
+          @if (unread > 0) {
+            <span class="ml-1 rounded-full bg-error-50 px-1.5 py-0.5 text-[11px] font-bold text-error-600 dark:bg-error-500/15 dark:text-error-400">{{ unread }}</span>
+          }
+        </p>
+        @if (unread > 0) {
+          <button (click)="markAll()" class="text-xs font-medium text-brand-500 hover:underline">
+            Marcar todas como leídas
+          </button>
+        } @else if (alerts.length) {
+          <span class="text-xs text-gray-400">Todo leído ✓</span>
+        }
       </div>
 
       <div class="max-h-80 overflow-y-auto">
         @for (a of alerts.slice(0, 8); track a.id) {
-          <a routerLink="/vencimientos" (click)="close()"
-            class="flex items-start gap-2.5 rounded-lg px-3 py-2.5 hover:bg-gray-50 dark:hover:bg-white/[0.05]">
+          <button (click)="open(a)"
+            class="flex w-full items-start gap-2.5 rounded-lg px-3 py-2.5 text-left transition-colors"
+            [class]="isRead(a)
+              ? 'opacity-55 hover:bg-gray-50 dark:hover:bg-white/[0.05]'
+              : 'bg-brand-50/50 hover:bg-brand-50 dark:bg-brand-500/[0.08] dark:hover:bg-brand-500/15'">
             <span class="mt-1.5 h-2 w-2 shrink-0 rounded-full"
-              [class]="a.level === 'vencido' || a.level === 'critico' ? 'bg-error-500' : a.level === 'alerta' ? 'bg-warning-500' : 'bg-blue-light-500'"></span>
-            <span class="min-w-0">
-              <span class="block truncate text-sm font-medium text-gray-800 dark:text-white/90">{{ a.product.name }}</span>
+              [class]="isRead(a)
+                ? 'bg-gray-300 dark:bg-gray-600'
+                : a.level === 'vencido' || a.level === 'critico' ? 'bg-error-500' : a.level === 'alerta' ? 'bg-warning-500' : 'bg-blue-light-500'"></span>
+            <span class="min-w-0 flex-1">
+              <span class="block truncate text-sm text-gray-800 dark:text-white/90"
+                [class.font-semibold]="!isRead(a)">{{ a.product.name }}</span>
               <span class="block text-xs text-gray-500">Lote {{ a.lotCode }} · {{ a.quantity }} un. · {{ label(a) }}</span>
             </span>
-          </a>
+            @if (!isRead(a)) {
+              <span class="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-brand-500" title="No leída"></span>
+            }
+          </button>
         } @empty {
           <p class="px-3 py-6 text-center text-sm text-gray-400">Sin vencimientos próximos 🎉</p>
         }
