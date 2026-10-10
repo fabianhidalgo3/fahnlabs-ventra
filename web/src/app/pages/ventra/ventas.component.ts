@@ -3,29 +3,32 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ApiService, Sale } from '../../core/api.service';
 import { AuthService } from '../../core/auth.service';
+import { PageHeaderComponent } from '../../shared/components/ventra/page-header.component';
 
 @Component({
   selector: 'app-ventra-ventas',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, PageHeaderComponent],
   template: `
+    <app-page-header title="Ventas" subtitle="Historial de ventas, boletas y anulaciones" />
+
     <div class="mb-4 flex flex-wrap items-end gap-3">
       <div>
         <label class="mb-1 block text-sm text-gray-500">Desde</label>
-        <input type="date" [(ngModel)]="from" class="h-11 rounded-lg border border-gray-300 bg-transparent px-3 text-sm dark:border-gray-700 dark:text-white/90" />
+        <input type="date" [(ngModel)]="from" class="h-11 rounded-lg border border-gray-300 bg-white px-3 text-sm dark:border-gray-700 dark:bg-gray-900 dark:text-white/90" />
       </div>
       <div>
         <label class="mb-1 block text-sm text-gray-500">Hasta</label>
-        <input type="date" [(ngModel)]="to" class="h-11 rounded-lg border border-gray-300 bg-transparent px-3 text-sm dark:border-gray-700 dark:text-white/90" />
+        <input type="date" [(ngModel)]="to" class="h-11 rounded-lg border border-gray-300 bg-white px-3 text-sm dark:border-gray-700 dark:bg-gray-900 dark:text-white/90" />
       </div>
-      <button (click)="load()" class="h-11 rounded-lg bg-brand-500 px-5 text-sm font-medium text-white">Consultar</button>
+      <button (click)="load()" class="inline-flex h-10 items-center gap-2 rounded-lg bg-brand-500 px-4 text-sm font-medium text-white shadow-theme-xs hover:bg-brand-600 disabled:opacity-40">Consultar</button>
       <span class="text-sm text-gray-400">{{ sales.length }} ventas</span>
     </div>
 
     <div class="rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900 max-h-[72vh] overflow-auto">
       <table class="w-full min-w-[800px] text-sm">
         <thead class="sticky top-0 z-10">
-          <tr class="border-b border-gray-100 bg-white text-left text-gray-500 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-400">
+          <tr class="border-b border-gray-100 bg-white text-left text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-500">
             <th class="px-5 py-3">N°</th><th class="px-5 py-3">Fecha</th><th class="px-5 py-3">Ítems</th>
             <th class="px-5 py-3">Pago</th><th class="px-5 py-3 text-right">Desc.</th>
             <th class="px-5 py-3 text-right">Total</th><th class="px-5 py-3">Boleta</th>
@@ -61,7 +64,14 @@ import { AuthService } from '../../core/auth.service';
               </td>
             </tr>
           } @empty {
-            <tr><td colspan="9" class="py-10 text-center text-gray-400">Sin ventas en el rango</td></tr>
+            <tr>
+              <td colspan="9" class="py-10 text-center">
+                <svg class="mx-auto h-10 w-10 text-gray-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M6 3h9l4 4v14H6V3z" /><path d="M15 3v4h4" /><path d="M9 12h6M9 16h6" />
+                </svg>
+                <p class="mt-2 text-sm text-gray-400">Sin ventas en el rango</p>
+              </td>
+            </tr>
           }
         </tbody>
       </table>

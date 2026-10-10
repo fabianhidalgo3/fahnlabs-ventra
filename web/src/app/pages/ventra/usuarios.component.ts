@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { API_URL } from '../../core/api.service';
+import { PageHeaderComponent } from '../../shared/components/ventra/page-header.component';
 
 interface AppUser {
   id: string;
@@ -16,21 +17,21 @@ interface AppUser {
 @Component({
   selector: 'app-ventra-usuarios',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, PageHeaderComponent],
   template: `
-    <div class="mb-4 flex items-center gap-3">
-      <button (click)="openForm()" class="h-11 rounded-lg bg-brand-500 px-4 text-sm font-medium text-white hover:bg-brand-600">+ Nuevo usuario</button>
+    <app-page-header title="Usuarios" subtitle="Cuentas y perfiles de acceso">
       <span class="text-sm text-gray-400">{{ users.length }} usuarios</span>
-    </div>
+      <button (click)="openForm()" class="inline-flex h-10 items-center gap-2 rounded-lg bg-brand-500 px-4 text-sm font-medium text-white shadow-theme-xs hover:bg-brand-600 disabled:opacity-40">+ Nuevo usuario</button>
+    </app-page-header>
 
     @if (showForm) {
-      <div class="mb-4 rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03]">
+      <div class="mb-4 rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-gray-900">
         <h4 class="mb-3 font-semibold text-gray-800 dark:text-white/90">{{ editing ? 'Editar' : 'Nuevo' }} usuario</h4>
         <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
-          <input [(ngModel)]="form.name" placeholder="Nombre *" class="h-11 rounded-lg border border-gray-300 bg-transparent px-3 text-sm dark:border-gray-700 dark:text-white/90" />
-          <input [(ngModel)]="form.email" [disabled]="!!editing" placeholder="Email *" type="email" class="h-11 rounded-lg border border-gray-300 bg-transparent px-3 text-sm disabled:opacity-50 dark:border-gray-700 dark:text-white/90" />
-          <input [(ngModel)]="form.password" [placeholder]="editing ? 'Nueva contraseña (opcional)' : 'Contraseña * (mín. 6)'" type="password" class="h-11 rounded-lg border border-gray-300 bg-transparent px-3 text-sm dark:border-gray-700 dark:text-white/90" />
-          <select [(ngModel)]="form.role" class="h-11 rounded-lg border border-gray-300 bg-transparent px-3 text-sm dark:border-gray-700 dark:bg-gray-900 dark:text-white/90">
+          <input [(ngModel)]="form.name" placeholder="Nombre *" class="h-11 rounded-lg border border-gray-300 bg-white px-3 text-sm dark:border-gray-700 dark:bg-gray-900 dark:text-white/90" />
+          <input [(ngModel)]="form.email" [disabled]="!!editing" placeholder="Email *" type="email" class="h-11 rounded-lg border border-gray-300 bg-white px-3 text-sm disabled:opacity-50 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90" />
+          <input [(ngModel)]="form.password" [placeholder]="editing ? 'Nueva contraseña (opcional)' : 'Contraseña * (mín. 6)'" type="password" class="h-11 rounded-lg border border-gray-300 bg-white px-3 text-sm dark:border-gray-700 dark:bg-gray-900 dark:text-white/90" />
+          <select [(ngModel)]="form.role" class="h-11 rounded-lg border border-gray-300 bg-white px-3 text-sm dark:border-gray-700 dark:bg-gray-900 dark:text-white/90">
             <option value="VENDEDOR">Vendedor</option>
             <option value="ADMIN">Administrador</option>
           </select>
@@ -42,16 +43,16 @@ interface AppUser {
         }
         @if (error) { <p class="mt-3 text-sm text-error-600">{{ error }}</p> }
         <div class="mt-4 flex gap-2">
-          <button (click)="save()" [disabled]="errores.length > 0" class="rounded-lg bg-brand-500 px-4 py-2.5 text-sm text-white disabled:opacity-40">Guardar</button>
-          <button (click)="showForm = false" class="rounded-lg border border-gray-300 px-4 py-2.5 text-sm dark:border-gray-700 dark:text-gray-300">Cancelar</button>
+          <button (click)="save()" [disabled]="errores.length > 0" class="inline-flex h-10 items-center gap-2 rounded-lg bg-brand-500 px-4 text-sm font-medium text-white shadow-theme-xs hover:bg-brand-600 disabled:opacity-40">Guardar</button>
+          <button (click)="showForm = false" class="inline-flex h-10 items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:hover:bg-gray-800">Cancelar</button>
         </div>
       </div>
     }
 
-    <div class="rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03] overflow-x-auto">
+    <div class="rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900 overflow-x-auto">
       <table class="w-full text-sm">
         <thead>
-          <tr class="border-b border-gray-100 text-left text-gray-500 dark:border-gray-800 dark:text-gray-400">
+          <tr class="border-b border-gray-100 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:border-gray-800 dark:text-gray-500">
             <th class="px-5 py-3">Nombre</th><th class="px-5 py-3">Email</th><th class="px-5 py-3">Perfil</th>
             <th class="px-5 py-3">Estado</th><th class="px-5 py-3">Creado</th><th class="px-5 py-3">Acciones</th>
           </tr>

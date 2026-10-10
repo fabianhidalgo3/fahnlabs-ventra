@@ -2,34 +2,37 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ApiService, CashSummary, CashSession } from '../../core/api.service';
+import { PageHeaderComponent } from '../../shared/components/ventra/page-header.component';
 
 @Component({
   selector: 'app-ventra-caja',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, PageHeaderComponent],
   template: `
+    <app-page-header title="Caja" subtitle="Apertura de turno, arqueo y cierre" />
+
     <div class="grid grid-cols-1 gap-6 xl:grid-cols-3">
       <div class="xl:col-span-2">
         @if (!summary?.session) {
           <!-- Caja cerrada: abrir turno -->
-          <div class="rounded-2xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-white/[0.03]">
+          <div class="rounded-2xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-gray-900">
             <h3 class="mb-1 text-lg font-semibold text-gray-800 dark:text-white/90">🔓 Abrir caja</h3>
             <p class="mb-4 text-sm text-gray-500">Ingresa el fondo inicial (sencillo) con el que parte el turno.</p>
             <div class="flex items-end gap-3">
               <div>
                 <label class="mb-1 block text-sm text-gray-500">Fondo inicial $</label>
                 <input type="number" [(ngModel)]="openingCash" min="0" step="1" inputmode="numeric" placeholder="Ej: 20000"
-                  class="h-12 w-44 rounded-lg border bg-transparent px-3 text-lg font-semibold dark:text-white/90"
+                  class="h-12 w-44 rounded-lg border bg-white px-3 text-lg font-semibold dark:bg-gray-900 dark:text-white/90"
                   [class]="montoInvalido(openingCash) ? 'border-error-400' : 'border-gray-300 dark:border-gray-700'" />
               </div>
               <button (click)="open()" [disabled]="openingCash == null || montoInvalido(openingCash)"
-                class="h-12 rounded-lg bg-brand-500 px-6 font-medium text-white hover:bg-brand-600 disabled:opacity-40">Abrir turno</button>
+                class="inline-flex h-10 items-center gap-2 rounded-lg bg-brand-500 px-4 text-sm font-medium text-white shadow-theme-xs hover:bg-brand-600 disabled:opacity-40">Abrir turno</button>
             </div>
             @if (error) { <p class="mt-3 text-sm text-error-600">{{ error }}</p> }
           </div>
         } @else {
           <!-- Caja abierta: resumen + cierre -->
-          <div class="rounded-2xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-white/[0.03]">
+          <div class="rounded-2xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-gray-900">
             <div class="mb-4 flex items-center justify-between">
               <h3 class="text-lg font-semibold text-gray-800 dark:text-white/90">🟢 Caja abierta</h3>
               <span class="text-sm text-gray-500">desde {{ summary!.session!.openedAt | date: 'dd/MM HH:mm' }}</span>
@@ -37,26 +40,46 @@ import { ApiService, CashSummary, CashSession } from '../../core/api.service';
 
             <div class="mb-5 grid grid-cols-2 gap-3 md:grid-cols-4">
               <div class="rounded-xl bg-gray-50 p-4 dark:bg-gray-800/60">
-                <p class="text-xs text-gray-500">Fondo inicial</p>
-                <p class="text-xl font-bold text-gray-800 dark:text-white/90">{{ clp(summary!.session!.openingCash) }}</p>
+                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-brand-50 text-brand-500 dark:bg-brand-500/15">
+                  <svg class="h-5 w-5" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="2" y="5.5" width="16" height="9" rx="1.5" /><circle cx="10" cy="10" r="2.2" /><path d="M5 10h.01M15 10h.01" />
+                  </svg>
+                </span>
+                <p class="mt-3 text-[11px] font-semibold uppercase tracking-wider text-gray-400">Fondo inicial</p>
+                <p class="text-xl font-bold text-gray-900 dark:text-white">{{ clp(summary!.session!.openingCash) }}</p>
               </div>
               <div class="rounded-xl bg-gray-50 p-4 dark:bg-gray-800/60">
-                <p class="text-xs text-gray-500">Ventas del turno</p>
-                <p class="text-xl font-bold text-gray-800 dark:text-white/90">{{ summary!.ventas }} · {{ clp(summary!.totalVentas ?? 0) }}</p>
+                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-brand-50 text-brand-500 dark:bg-brand-500/15">
+                  <svg class="h-5 w-5" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M5 4a1 1 0 0 1 1-1h8a1 1 0 0 1 1 1v13l-2.5-1.4L10 17l-2.5-1.4L5 17V4z" /><path d="M8 7h4M8 10h4" />
+                  </svg>
+                </span>
+                <p class="mt-3 text-[11px] font-semibold uppercase tracking-wider text-gray-400">Ventas del turno</p>
+                <p class="text-xl font-bold text-gray-900 dark:text-white">{{ summary!.ventas }} · {{ clp(summary!.totalVentas ?? 0) }}</p>
               </div>
               <div class="rounded-xl bg-gray-50 p-4 dark:bg-gray-800/60">
-                <p class="text-xs text-gray-500">Efectivo esperado</p>
+                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-brand-50 text-brand-500 dark:bg-brand-500/15">
+                  <svg class="h-5 w-5" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="10" cy="10" r="7" /><path d="M10 6v8" /><path d="M12.2 7.8c-.5-.6-1.3-1-2.2-1-1.3 0-2.3.7-2.3 1.6 0 2.2 4.6 1 4.6 3.2 0 .9-1 1.6-2.3 1.6-.9 0-1.7-.4-2.2-1" />
+                  </svg>
+                </span>
+                <p class="mt-3 text-[11px] font-semibold uppercase tracking-wider text-gray-400">Efectivo esperado</p>
                 <p class="text-xl font-bold text-success-600">{{ clp(summary!.expectedCash ?? 0) }}</p>
               </div>
               <div class="rounded-xl bg-gray-50 p-4 dark:bg-gray-800/60">
-                <p class="text-xs text-gray-500">Otros medios</p>
-                <p class="text-xl font-bold text-gray-800 dark:text-white/90">{{ clp((summary!.totalVentas ?? 0) - efectivoTurno) }}</p>
+                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-brand-50 text-brand-500 dark:bg-brand-500/15">
+                  <svg class="h-5 w-5" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="2.5" y="5" width="15" height="10" rx="1.5" /><path d="M2.5 8.5h15" /><path d="M5.5 12h3" />
+                  </svg>
+                </span>
+                <p class="mt-3 text-[11px] font-semibold uppercase tracking-wider text-gray-400">Otros medios</p>
+                <p class="text-xl font-bold text-gray-900 dark:text-white">{{ clp((summary!.totalVentas ?? 0) - efectivoTurno) }}</p>
               </div>
             </div>
 
             <table class="mb-5 w-full text-sm">
               <thead>
-                <tr class="border-b border-gray-100 text-left text-gray-500 dark:border-gray-800 dark:text-gray-400">
+                <tr class="border-b border-gray-100 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:border-gray-800 dark:text-gray-500">
                   <th class="py-2">Medio de pago</th><th class="py-2 text-right">Ventas</th><th class="py-2 text-right">Total</th>
                 </tr>
               </thead>
@@ -78,11 +101,11 @@ import { ApiService, CashSummary, CashSession } from '../../core/api.service';
                 <div>
                   <label class="mb-1 block text-sm text-gray-500">Efectivo contado $</label>
                   <input type="number" [(ngModel)]="countedCash" min="0" step="1" inputmode="numeric" placeholder="Cuenta el cajón"
-                    class="h-12 w-44 rounded-lg border bg-transparent px-3 text-lg font-semibold dark:text-white/90"
+                    class="h-12 w-44 rounded-lg border bg-white px-3 text-lg font-semibold dark:bg-gray-900 dark:text-white/90"
                     [class]="montoInvalido(countedCash) ? 'border-error-400' : 'border-gray-300 dark:border-gray-700'" />
                 </div>
                 <input [(ngModel)]="note" placeholder="Nota (opcional)" maxlength="200"
-                  class="h-12 flex-1 min-w-40 rounded-lg border border-gray-300 bg-transparent px-3 text-sm dark:border-gray-700 dark:text-white/90" />
+                  class="h-12 flex-1 min-w-40 rounded-lg border border-gray-300 bg-white px-3 text-sm dark:border-gray-700 dark:bg-gray-900 dark:text-white/90" />
                 <button (click)="close()" [disabled]="countedCash == null || montoInvalido(countedCash)"
                   class="h-12 rounded-lg bg-error-500 px-6 font-medium text-white hover:bg-error-600 disabled:opacity-40">Cerrar turno</button>
               </div>
@@ -100,7 +123,7 @@ import { ApiService, CashSummary, CashSession } from '../../core/api.service';
         }
       </div>
 
-      <div class="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03] h-fit">
+      <div class="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-gray-900 h-fit">
         <h3 class="mb-3 text-lg font-semibold text-gray-800 dark:text-white/90">Cierres anteriores</h3>
         <div class="space-y-3">
           @for (h of history; track h.id) {
@@ -119,7 +142,12 @@ import { ApiService, CashSummary, CashSession } from '../../core/api.service';
               </div>
             }
           } @empty {
-            <p class="py-4 text-center text-sm text-gray-400">Sin cierres aún</p>
+            <div class="py-8 text-center">
+              <svg class="mx-auto h-10 w-10 text-gray-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="4" width="18" height="16" rx="2" /><circle cx="12" cy="12" r="4" /><path d="M12 10.5V12l1.2 1.2" />
+              </svg>
+              <p class="mt-2 text-sm text-gray-400">Sin cierres aún</p>
+            </div>
           }
         </div>
       </div>

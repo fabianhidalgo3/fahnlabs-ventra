@@ -9,8 +9,9 @@ import { AuthService } from '../../core/auth.service';
   standalone: true,
   imports: [CommonModule, FormsModule],
   template: `
-    <div class="flex min-h-screen items-center justify-center bg-gray-50 dark:bg-gray-900 px-4">
-      <div class="w-full max-w-md rounded-2xl border border-gray-200 bg-white p-8 shadow-sm dark:border-gray-800 dark:bg-white/[0.03]">
+    <div class="relative flex min-h-screen items-center justify-center overflow-hidden bg-gray-50 px-4 dark:bg-gray-950">
+      <div class="pointer-events-none absolute left-1/2 top-1/2 h-[32rem] w-[32rem] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[radial-gradient(circle_at_center,#465fff,transparent_70%)] opacity-20 blur-3xl" aria-hidden="true"></div>
+      <div class="relative w-full max-w-md rounded-2xl border border-gray-200 bg-white p-8 shadow-lg dark:border-gray-800 dark:bg-gray-900">
         <div class="mb-8 text-center">
           <img src="/images/logo-ventra.svg" alt="Ventra" class="mx-auto h-12 dark:hidden" />
           <img src="/images/logo-ventra-blanco.svg" alt="Ventra" class="mx-auto h-12 hidden dark:block" />
@@ -29,10 +30,12 @@ import { AuthService } from '../../core/auth.service';
           @if (error) { <p class="mb-3 text-sm text-error-600">{{ error }}</p> }
 
           <button type="submit" [disabled]="loading"
-            class="w-full rounded-lg bg-brand-500 py-3 font-medium text-white hover:bg-brand-600 disabled:opacity-40">
+            class="inline-flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-brand-500 px-4 text-sm font-medium text-white shadow-theme-xs hover:bg-brand-600 disabled:opacity-40">
             {{ loading ? 'Ingresando…' : 'Ingresar' }}
           </button>
         </form>
+
+        <p class="mt-6 text-center text-xs text-gray-400 dark:text-gray-500">Ventra · Sistema de ventas — FHAN Labs</p>
       </div>
     </div>
   `,

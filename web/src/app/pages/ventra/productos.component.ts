@@ -3,35 +3,39 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ApiService, Product, Category } from '../../core/api.service';
 import { AuthService } from '../../core/auth.service';
+import { PageHeaderComponent } from '../../shared/components/ventra/page-header.component';
 
 @Component({
   selector: 'app-ventra-productos',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, PageHeaderComponent],
   template: `
+    <app-page-header title="Productos" subtitle="Inventario, precios, códigos y vencimientos">
+      @if (auth.isAdmin) {
+        <button (click)="showBulk = !showBulk" class="inline-flex h-10 items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:hover:bg-gray-800">Precios masivos</button>
+        <button (click)="openForm()" class="inline-flex h-10 items-center gap-2 rounded-lg bg-brand-500 px-4 text-sm font-medium text-white shadow-theme-xs hover:bg-brand-600 disabled:opacity-40">+ Nuevo producto</button>
+      }
+    </app-page-header>
+
     <div class="mb-4 flex flex-wrap items-center gap-3">
       <input [(ngModel)]="search" (input)="load()" placeholder="Buscar por nombre, SKU o código…"
-        class="h-11 w-72 rounded-lg border border-gray-300 bg-transparent px-4 text-sm text-gray-800 placeholder:text-gray-400 focus:border-brand-300 focus:outline-none dark:border-gray-700 dark:text-white/90" />
-      @if (auth.isAdmin) {
-        <button (click)="openForm()" class="h-11 rounded-lg bg-brand-500 px-4 text-sm font-medium text-white hover:bg-brand-600">+ Nuevo producto</button>
-        <button (click)="showBulk = !showBulk" class="h-11 rounded-lg border border-gray-300 px-4 text-sm font-medium text-gray-700 dark:border-gray-700 dark:text-gray-300">Precios masivos</button>
-      }
+        class="h-10 w-72 rounded-lg border border-gray-300 bg-white px-4 text-sm text-gray-800 placeholder:text-gray-400 focus:border-brand-300 focus:outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-white/90" />
       <span class="text-sm text-gray-400">{{ products.length }} productos</span>
     </div>
 
     @if (showBulk) {
-      <div class="mb-4 rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03]">
+      <div class="mb-4 rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-gray-900">
         <h4 class="mb-3 font-semibold text-gray-800 dark:text-white/90">Actualización masiva de precios</h4>
         <div class="flex flex-wrap items-end gap-4">
           <div>
             <label class="mb-1 block text-sm text-gray-500">Ajuste porcentual</label>
             <div class="flex gap-2">
-              <input type="number" [(ngModel)]="bulkPercent" placeholder="%" class="h-11 w-24 rounded-lg border border-gray-300 bg-transparent px-3 text-sm dark:border-gray-700 dark:text-white/90" />
-              <select [(ngModel)]="bulkCategory" class="h-11 rounded-lg border border-gray-300 bg-transparent px-3 text-sm dark:border-gray-700 dark:text-white/90 dark:bg-gray-900">
+              <input type="number" [(ngModel)]="bulkPercent" placeholder="%" class="h-11 w-24 rounded-lg border border-gray-300 bg-white px-3 text-sm dark:border-gray-700 dark:bg-gray-900 dark:text-white/90" />
+              <select [(ngModel)]="bulkCategory" class="h-11 rounded-lg border border-gray-300 bg-white px-3 text-sm dark:border-gray-700 dark:bg-gray-900 dark:text-white/90">
                 <option value="">Todas las categorías</option>
                 @for (c of cats; track c.id) { <option [value]="c.id">{{ c.name }}</option> }
               </select>
-              <button (click)="applyBulk()" class="h-11 rounded-lg bg-brand-500 px-4 text-sm text-white">Aplicar</button>
+              <button (click)="applyBulk()" class="inline-flex h-10 items-center gap-2 rounded-lg bg-brand-500 px-4 text-sm font-medium text-white shadow-theme-xs hover:bg-brand-600 disabled:opacity-40">Aplicar</button>
             </div>
           </div>
           <div>
@@ -45,34 +49,34 @@ import { AuthService } from '../../core/auth.service';
     }
 
     @if (showForm) {
-      <div class="mb-4 rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03]">
+      <div class="mb-4 rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-gray-900">
         <h4 class="mb-3 font-semibold text-gray-800 dark:text-white/90">{{ editing ? 'Editar' : 'Nuevo' }} producto</h4>
         <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
           <div>
             <input [(ngModel)]="form.name" placeholder="Nombre *" required
-              class="h-11 w-full rounded-lg border bg-transparent px-3 text-sm dark:text-white/90"
+              class="h-11 w-full rounded-lg border bg-white px-3 text-sm dark:bg-gray-900 dark:text-white/90"
               [class]="errores['name'] ? 'border-error-400' : 'border-gray-300 dark:border-gray-700'" />
             @if (errores['name']) { <p class="mt-1 text-xs text-error-500">{{ errores['name'] }}</p> }
           </div>
           <div>
             <input type="number" [(ngModel)]="form.price" placeholder="Precio CLP * (entero)" inputmode="numeric" min="1" step="1" required
-              class="h-11 w-full rounded-lg border bg-transparent px-3 text-sm dark:text-white/90"
+              class="h-11 w-full rounded-lg border bg-white px-3 text-sm dark:bg-gray-900 dark:text-white/90"
               [class]="errores['price'] ? 'border-error-400' : 'border-gray-300 dark:border-gray-700'" />
             @if (errores['price']) { <p class="mt-1 text-xs text-error-500">{{ errores['price'] }}</p> }
           </div>
           <div>
             <input type="number" [(ngModel)]="form.stock" placeholder="Stock (entero)" inputmode="numeric" min="0" step="1"
-              class="h-11 w-full rounded-lg border bg-transparent px-3 text-sm dark:text-white/90"
+              class="h-11 w-full rounded-lg border bg-white px-3 text-sm dark:bg-gray-900 dark:text-white/90"
               [class]="errores['stock'] ? 'border-error-400' : 'border-gray-300 dark:border-gray-700'" />
             @if (errores['stock']) { <p class="mt-1 text-xs text-error-500">{{ errores['stock'] }}</p> }
           </div>
           <div>
             <input [(ngModel)]="form.barcode" placeholder="Código de barras (vacío = autogenerar)" inputmode="numeric"
-              class="h-11 w-full rounded-lg border bg-transparent px-3 text-sm dark:text-white/90"
+              class="h-11 w-full rounded-lg border bg-white px-3 text-sm dark:bg-gray-900 dark:text-white/90"
               [class]="errores['barcode'] ? 'border-error-400' : 'border-gray-300 dark:border-gray-700'" />
             @if (errores['barcode']) { <p class="mt-1 text-xs text-error-500">{{ errores['barcode'] }}</p> }
           </div>
-          <select [(ngModel)]="form.categoryId" class="h-11 rounded-lg border border-gray-300 bg-transparent px-3 text-sm dark:border-gray-700 dark:text-white/90 dark:bg-gray-900">
+          <select [(ngModel)]="form.categoryId" class="h-11 rounded-lg border border-gray-300 bg-white px-3 text-sm dark:border-gray-700 dark:bg-gray-900 dark:text-white/90">
             <option value="">Sin categoría</option>
             @for (c of cats; track c.id) { <option [value]="c.id">{{ c.name }}</option> }
           </select>
@@ -80,8 +84,8 @@ import { AuthService } from '../../core/auth.service';
             class="block text-sm text-gray-500 file:mr-3 file:rounded-lg file:border-0 file:bg-gray-200 file:px-4 file:py-2.5 dark:file:bg-gray-700 dark:file:text-gray-200" />
         </div>
         <div class="mt-4 flex gap-2">
-          <button (click)="save()" [disabled]="!formValido" class="rounded-lg bg-brand-500 px-4 py-2.5 text-sm text-white disabled:opacity-40">Guardar</button>
-          <button (click)="showForm = false" class="rounded-lg border border-gray-300 px-4 py-2.5 text-sm dark:border-gray-700 dark:text-gray-300">Cancelar</button>
+          <button (click)="save()" [disabled]="!formValido" class="inline-flex h-10 items-center gap-2 rounded-lg bg-brand-500 px-4 text-sm font-medium text-white shadow-theme-xs hover:bg-brand-600 disabled:opacity-40">Guardar</button>
+          <button (click)="showForm = false" class="inline-flex h-10 items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:hover:bg-gray-800">Cancelar</button>
         </div>
       </div>
     }
@@ -89,10 +93,10 @@ import { AuthService } from '../../core/auth.service';
     <div class="rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900 max-h-[70vh] overflow-auto">
       <table class="w-full min-w-[900px] text-sm">
         <thead class="sticky top-0 z-10">
-          <tr class="border-b border-gray-100 bg-white text-left text-gray-500 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-400">
-            <th class="sticky left-0 z-20 bg-white px-5 py-3 dark:bg-gray-900">Producto</th>
-            <th class="px-5 py-3">SKU / Código</th><th class="px-5 py-3 text-right">Precio</th>
-            <th class="px-5 py-3 text-right">Stock</th><th class="px-5 py-3">Vencimiento</th><th class="px-5 py-3">Acciones</th>
+          <tr class="border-b border-gray-100 bg-white text-left dark:border-gray-800 dark:bg-gray-900">
+            <th class="sticky left-0 z-20 bg-white px-5 py-3 text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:bg-gray-900 dark:text-gray-500">Producto</th>
+            <th class="px-5 py-3 text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">SKU / Código</th><th class="px-5 py-3 text-right text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">Precio</th>
+            <th class="px-5 py-3 text-right text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">Stock</th><th class="px-5 py-3 text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">Vencimiento</th><th class="px-5 py-3 text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">Acciones</th>
           </tr>
         </thead>
         <tbody>
@@ -133,7 +137,7 @@ import { AuthService } from '../../core/auth.service';
               </td>
               <td class="px-5 py-3">
                 @if (p.daysToExpiry !== null && p.daysToExpiry !== undefined) {
-                  <span class="rounded-full px-2.5 py-1 text-xs font-medium" [class]="badge(p.daysToExpiry)">
+                  <span class="rounded-full px-2.5 py-0.5 text-xs font-medium" [class]="badge(p.daysToExpiry)">
                     {{ p.daysToExpiry < 0 ? 'Vencido' : p.daysToExpiry + ' días' }}
                   </span>
                 } @else { <span class="text-xs text-gray-400">—</span> }
@@ -149,6 +153,15 @@ import { AuthService } from '../../core/auth.service';
                     <button (click)="remove(p)" class="rounded border border-error-300 px-2 py-1 text-error-600">Eliminar</button>
                   }
                 </div>
+              </td>
+            </tr>
+          } @empty {
+            <tr>
+              <td colspan="6" class="px-5 py-10 text-center">
+                <svg class="mx-auto h-10 w-10 text-gray-300" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="m21 7.5-9-5.25L3 7.5m18 0-9 5.25m9-5.25v9l-9 5.25M3 7.5l9 5.25M3 7.5v9l9 5.25m0-9v9" />
+                </svg>
+                <p class="mt-2 text-sm text-gray-400">Sin productos registrados</p>
               </td>
             </tr>
           }

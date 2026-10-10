@@ -2,15 +2,28 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ApiService, BatchAlert, whatsappUrl } from '../../core/api.service';
+import { PageHeaderComponent } from '../../shared/components/ventra/page-header.component';
 
 @Component({
   selector: 'app-ventra-vencimientos',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, PageHeaderComponent],
   template: `
+    <app-page-header title="Vencimientos" subtitle="Lotes próximos a vencer por nivel de urgencia">
+      @if (alerts.length) {
+        <a [href]="waAlerts()" target="_blank"
+          class="inline-flex h-10 items-center gap-2 rounded-lg bg-success-500 px-4 text-sm font-medium text-white shadow-theme-xs hover:bg-success-600">
+          <svg class="h-4 w-4" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+            <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.52.149-.174.198-.298.297-.497.1-.198.05-.371-.025-.52-.074-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
+          </svg>
+          Enviar por WhatsApp
+        </a>
+      }
+    </app-page-header>
+
     <div class="mb-4 flex items-center gap-3">
       <label class="text-sm text-gray-500">Mostrar lotes que vencen en</label>
-      <select [(ngModel)]="days" (change)="load()" class="h-10 rounded-lg border border-gray-300 bg-transparent px-3 text-sm dark:border-gray-700 dark:bg-gray-900 dark:text-white/90">
+      <select [(ngModel)]="days" (change)="load()" class="h-10 rounded-lg border border-gray-300 bg-white px-3 text-sm dark:border-gray-700 dark:bg-gray-900 dark:text-white/90">
         <option [value]="7">7 días</option>
         <option [value]="15">15 días</option>
         <option [value]="30">30 días</option>
@@ -18,20 +31,14 @@ import { ApiService, BatchAlert, whatsappUrl } from '../../core/api.service';
         <option [value]="90">90 días</option>
       </select>
       <span class="text-sm text-gray-400">{{ alerts.length }} lotes</span>
-      @if (alerts.length) {
-        <a [href]="waAlerts()" target="_blank"
-          class="ml-auto rounded-lg bg-success-500 px-4 py-2 text-sm font-medium text-white hover:bg-success-600">
-          📲 Enviar por WhatsApp
-        </a>
-      }
     </div>
 
-    <div class="rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03] overflow-x-auto">
+    <div class="rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900 overflow-x-auto">
       <table class="w-full text-sm">
         <thead>
-          <tr class="border-b border-gray-100 text-left text-gray-500 dark:border-gray-800 dark:text-gray-400">
-            <th class="px-5 py-3">Producto</th><th class="px-5 py-3">Lote</th><th class="px-5 py-3 text-right">Cantidad</th>
-            <th class="px-5 py-3">Vence</th><th class="px-5 py-3">Estado</th>
+          <tr class="border-b border-gray-100 text-left dark:border-gray-800">
+            <th class="px-5 py-3 text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">Producto</th><th class="px-5 py-3 text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">Lote</th><th class="px-5 py-3 text-right text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">Cantidad</th>
+            <th class="px-5 py-3 text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">Vence</th><th class="px-5 py-3 text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">Estado</th>
           </tr>
         </thead>
         <tbody>
@@ -45,13 +52,20 @@ import { ApiService, BatchAlert, whatsappUrl } from '../../core/api.service';
               <td class="px-5 py-3 text-right text-gray-700 dark:text-gray-300">{{ a.quantity }}</td>
               <td class="px-5 py-3 text-gray-600 dark:text-gray-400">{{ a.expiresAt | date: 'dd/MM/yyyy' }}</td>
               <td class="px-5 py-3">
-                <span class="rounded-full px-2.5 py-1 text-xs font-medium" [class]="badge(a.level)">
+                <span class="rounded-full px-2.5 py-0.5 text-xs font-medium" [class]="badge(a.level)">
                   {{ label(a) }}
                 </span>
               </td>
             </tr>
           } @empty {
-            <tr><td colspan="5" class="py-10 text-center text-gray-400">Sin lotes por vencer en este rango 🎉</td></tr>
+            <tr>
+              <td colspan="5" class="px-5 py-10 text-center">
+                <svg class="mx-auto h-10 w-10 text-gray-300" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                </svg>
+                <p class="mt-2 text-sm text-gray-400">Sin lotes por vencer en este rango</p>
+              </td>
+            </tr>
           }
         </tbody>
       </table>

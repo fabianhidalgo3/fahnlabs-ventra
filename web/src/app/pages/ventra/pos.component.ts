@@ -17,21 +17,21 @@ interface CartLine {
   template: `
     <div class="grid grid-cols-1 gap-4 xl:grid-cols-5">
       <!-- ===== Catálogo (izquierda) ===== -->
-      <div class="xl:col-span-3 flex flex-col rounded-2xl border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-white/[0.03]">
+      <div class="xl:col-span-3 flex flex-col rounded-2xl border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-gray-900">
         <input #scanInput [(ngModel)]="scanCode" (keydown.enter)="addByCode()" (input)="filterGrid()" autofocus
           placeholder="🔍 Escanear código o buscar producto…"
-          class="mb-3 h-14 w-full rounded-xl border-2 border-brand-300 bg-transparent px-4 text-lg focus:border-brand-500 focus:outline-none dark:text-white/90" />
+          class="mb-3 h-14 w-full rounded-xl border-2 border-brand-300 bg-white px-4 text-lg focus:border-brand-500 focus:outline-none dark:bg-gray-900 dark:text-white/90" />
 
         <div class="mb-3 flex flex-wrap gap-2">
           <button (click)="selectCat('')"
             class="rounded-full px-4 py-1.5 text-sm font-medium"
-            [class]="!catId ? 'bg-brand-500 text-white' : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-300'">
+            [class]="!catId ? 'bg-brand-500 text-white' : 'bg-white border border-gray-300 text-gray-600 dark:bg-gray-900 dark:border-gray-700 dark:text-gray-300'">
             Todos
           </button>
           @for (c of cats; track c.id) {
             <button (click)="selectCat(c.id)"
               class="rounded-full px-4 py-1.5 text-sm font-medium"
-              [class]="catId === c.id ? 'bg-brand-500 text-white' : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-300'">
+              [class]="catId === c.id ? 'bg-brand-500 text-white' : 'bg-white border border-gray-300 text-gray-600 dark:bg-gray-900 dark:border-gray-700 dark:text-gray-300'">
               {{ c.name }}
             </button>
           }
@@ -42,7 +42,7 @@ interface CartLine {
         <div class="grid max-h-[62vh] grid-cols-2 gap-3 overflow-y-auto sm:grid-cols-3 lg:grid-cols-4">
           @for (p of visible; track p.id) {
             <button (click)="addProduct(p)" [disabled]="p.stock <= 0"
-              class="flex flex-col items-start rounded-xl border border-gray-200 p-3 text-left transition hover:border-brand-400 hover:shadow-sm active:scale-95 disabled:opacity-40 dark:border-gray-800 dark:hover:border-brand-500">
+              class="flex flex-col items-start rounded-xl border border-gray-200 p-3 text-left shadow-theme-xs transition hover:border-brand-400 hover:shadow-sm hover:ring-2 hover:ring-brand-500/30 active:scale-95 disabled:opacity-40 dark:border-gray-800 dark:hover:border-brand-500">
               @if (p.imageUrl) {
                 <img [src]="api.fileUrl(p.imageUrl)" class="mb-2 h-16 w-full rounded-lg object-cover" [alt]="p.name" loading="lazy" onerror="this.src='/images/product-placeholder.svg'" />
               } @else {
@@ -59,11 +59,11 @@ interface CartLine {
       </div>
 
       <!-- ===== Ticket (derecha) ===== -->
-      <div class="xl:col-span-2 flex flex-col rounded-2xl border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-white/[0.03]">
+      <div class="xl:col-span-2 flex flex-col rounded-2xl border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-gray-900">
         <div class="mb-3 flex items-center justify-between">
           <h3 class="text-lg font-semibold text-gray-800 dark:text-white/90">🧾 Venta actual</h3>
           @if (cart.length) {
-            <button (click)="park()" class="rounded-lg border border-gray-300 px-3 py-1.5 text-xs font-medium text-gray-600 dark:border-gray-700 dark:text-gray-300">⏸ Suspender</button>
+            <button (click)="park()" class="rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:hover:bg-gray-800">⏸ Suspender</button>
           }
         </div>
 
@@ -91,7 +91,12 @@ interface CartLine {
               <span class="w-20 text-right text-sm font-semibold text-gray-800 dark:text-white/90">{{ clp(line.quantity * line.product.price) }}</span>
             </div>
           } @empty {
-            <p class="py-10 text-center text-sm text-gray-400">Toca un producto o escanea<br />para empezar la venta</p>
+            <div class="py-10 text-center">
+              <svg class="mx-auto h-10 w-10 text-gray-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M3 4h2l2.4 11h11.2L21 8H6" /><circle cx="9" cy="19" r="1.5" /><circle cx="17" cy="19" r="1.5" />
+              </svg>
+              <p class="mt-2 text-sm text-gray-400">Toca un producto o escanea<br />para empezar la venta</p>
+            </div>
           }
         </div>
 
@@ -104,13 +109,13 @@ interface CartLine {
                   class="rounded-lg border border-gray-300 px-2 py-1 text-xs text-gray-500 dark:border-gray-700 dark:text-gray-400">{{ pct }}%</button>
               }
               <input type="number" [(ngModel)]="discount" (ngModelChange)="clampDiscount()" min="0" step="1" inputmode="numeric" placeholder="$"
-                class="h-9 w-24 rounded-lg border border-gray-300 bg-transparent px-2 text-right text-sm dark:border-gray-700 dark:text-white/90" />
+                class="h-9 w-24 rounded-lg border border-gray-300 bg-white px-2 text-right text-sm dark:border-gray-700 dark:bg-gray-900 dark:text-white/90" />
             </div>
           </div>
           @if (promoDiscount > 0) {
             <div class="mt-2 flex items-center justify-between" [title]="promoNames">
               <span class="cursor-help text-sm font-medium text-success-600 dark:text-success-400">🏷 Ofertas ({{ promoQuote?.detail?.length }})</span>
-              <span class="text-sm font-semibold text-success-600 dark:text-success-400">−{{ clp(promoDiscount) }}</span>
+              <span class="text-sm font-semibold text-brand-600 dark:text-brand-400">−{{ clp(promoDiscount) }}</span>
             </div>
           }
           <div class="mt-2 flex justify-between text-xs text-gray-400">
@@ -118,7 +123,7 @@ interface CartLine {
           </div>
           <div class="mt-1 flex items-end justify-between">
             <span class="text-lg font-semibold text-gray-600 dark:text-gray-300">TOTAL</span>
-            <span class="text-4xl font-extrabold tracking-tight text-gray-800 dark:text-white">{{ clp(totalFinal) }}</span>
+            <span class="text-4xl font-extrabold tracking-tight text-gray-900 dark:text-white">{{ clp(totalFinal) }}</span>
           </div>
 
           <div class="mt-4 grid grid-cols-2 gap-2">
