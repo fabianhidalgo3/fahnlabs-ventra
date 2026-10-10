@@ -5,6 +5,7 @@ import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { ApiService, Product, Category } from '../../core/api.service';
 import { AuthService } from '../../core/auth.service';
 import { PageHeaderComponent } from '../../shared/components/ventra/page-header.component';
+import { CodigoModalComponent } from '../../shared/components/ventra/codigo-modal.component';
 
 interface Batch {
   id: string;
@@ -26,7 +27,7 @@ type ProductoFull = Product & { batches?: Batch[]; priceLogs?: PriceLog[] };
 @Component({
   selector: 'app-ventra-producto-detalle',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule, PageHeaderComponent],
+  imports: [CommonModule, FormsModule, RouterModule, PageHeaderComponent, CodigoModalComponent],
   template: `
     @if (p) {
       <app-page-header [title]="p.name" [subtitle]="(p.category?.name ?? 'Sin categoría') + ' · ' + p.sku">
@@ -70,8 +71,8 @@ type ProductoFull = Product & { batches?: Batch[]; priceLogs?: PriceLog[] };
               </span>
             </div>
             <div class="flex gap-2 pt-2">
-              <a [href]="api.barcodeUrl(p.id)" target="_blank" class="flex-1 rounded-lg border border-gray-300 py-2 text-center text-xs font-medium text-gray-700 dark:border-gray-700 dark:text-gray-300">Ver código de barras</a>
-              <a [href]="api.qrUrl(p.id)" target="_blank" class="flex-1 rounded-lg border border-gray-300 py-2 text-center text-xs font-medium text-gray-700 dark:border-gray-700 dark:text-gray-300">Ver QR</a>
+              <button (click)="verCodigo('barras')" class="flex-1 rounded-lg border border-gray-300 py-2 text-center text-xs font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800">Ver código de barras</button>
+              <button (click)="verCodigo('qr')" class="flex-1 rounded-lg border border-gray-300 py-2 text-center text-xs font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800">Ver QR</button>
             </div>
           </div>
         </div>
@@ -106,15 +107,33 @@ type ProductoFull = Product & { batches?: Batch[]; priceLogs?: PriceLog[] };
             <div class="rounded-2xl border-2 border-dashed border-brand-200 bg-white p-5 dark:border-brand-500/30 dark:bg-gray-900">
               <h4 class="mb-3 font-semibold text-gray-800 dark:text-white/90">Editar producto</h4>
               <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
-                <input [(ngModel)]="form.name" placeholder="Nombre *" class="h-11 rounded-lg border border-gray-300 bg-white px-3 text-sm dark:border-gray-700 dark:bg-gray-950 dark:text-white/90" />
-                <input type="number" [(ngModel)]="form.price" placeholder="Precio CLP *" min="1" step="1" inputmode="numeric" class="h-11 rounded-lg border border-gray-300 bg-white px-3 text-sm dark:border-gray-700 dark:bg-gray-950 dark:text-white/90" />
-                <input type="number" [(ngModel)]="form.stock" placeholder="Stock" min="0" step="1" inputmode="numeric" class="h-11 rounded-lg border border-gray-300 bg-white px-3 text-sm dark:border-gray-700 dark:bg-gray-950 dark:text-white/90" />
-                <input type="number" [(ngModel)]="form.cost" placeholder="Costo CLP" min="0" step="1" inputmode="numeric" class="h-11 rounded-lg border border-gray-300 bg-white px-3 text-sm dark:border-gray-700 dark:bg-gray-950 dark:text-white/90" />
-                <input type="number" [(ngModel)]="form.minStock" placeholder="Stock mínimo" min="0" step="1" inputmode="numeric" class="h-11 rounded-lg border border-gray-300 bg-white px-3 text-sm dark:border-gray-700 dark:bg-gray-950 dark:text-white/90" />
-                <select [(ngModel)]="form.categoryId" class="h-11 rounded-lg border border-gray-300 bg-white px-3 text-sm dark:border-gray-700 dark:bg-gray-950 dark:text-white/90">
-                  <option value="">Sin categoría</option>
-                  @for (c of cats; track c.id) { <option [value]="c.id">{{ c.name }}</option> }
-                </select>
+                <div>
+                  <label class="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">Nombre *</label>
+                  <input [(ngModel)]="form.name" placeholder="Nombre del producto" class="h-11 w-full rounded-lg border border-gray-300 bg-white px-3 text-sm dark:border-gray-700 dark:bg-gray-950 dark:text-white/90" />
+                </div>
+                <div>
+                  <label class="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">Precio de venta CLP *</label>
+                  <input type="number" [(ngModel)]="form.price" placeholder="0" min="1" step="1" inputmode="numeric" class="h-11 w-full rounded-lg border border-gray-300 bg-white px-3 text-sm dark:border-gray-700 dark:bg-gray-950 dark:text-white/90" />
+                </div>
+                <div>
+                  <label class="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">Stock actual</label>
+                  <input type="number" [(ngModel)]="form.stock" placeholder="0" min="0" step="1" inputmode="numeric" class="h-11 w-full rounded-lg border border-gray-300 bg-white px-3 text-sm dark:border-gray-700 dark:bg-gray-950 dark:text-white/90" />
+                </div>
+                <div>
+                  <label class="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">Costo CLP</label>
+                  <input type="number" [(ngModel)]="form.cost" placeholder="0" min="0" step="1" inputmode="numeric" class="h-11 w-full rounded-lg border border-gray-300 bg-white px-3 text-sm dark:border-gray-700 dark:bg-gray-950 dark:text-white/90" />
+                </div>
+                <div>
+                  <label class="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">Stock mínimo (alerta)</label>
+                  <input type="number" [(ngModel)]="form.minStock" placeholder="0" min="0" step="1" inputmode="numeric" class="h-11 w-full rounded-lg border border-gray-300 bg-white px-3 text-sm dark:border-gray-700 dark:bg-gray-950 dark:text-white/90" />
+                </div>
+                <div>
+                  <label class="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">Categoría</label>
+                  <select [(ngModel)]="form.categoryId" class="h-11 w-full rounded-lg border border-gray-300 bg-white px-3 text-sm dark:border-gray-700 dark:bg-gray-950 dark:text-white/90">
+                    <option value="">Sin categoría</option>
+                    @for (c of cats; track c.id) { <option [value]="c.id">{{ c.name }}</option> }
+                  </select>
+                </div>
               </div>
               @if (error) { <p class="mt-2 text-sm text-error-600">{{ error }}</p> }
               <button (click)="save()" class="mt-4 inline-flex h-10 items-center rounded-lg bg-brand-500 px-4 text-sm font-medium text-white hover:bg-brand-600">Guardar cambios</button>
@@ -141,9 +160,9 @@ type ProductoFull = Product & { batches?: Batch[]; priceLogs?: PriceLog[] };
             <table class="w-full text-sm">
               <thead>
                 <tr class="border-b border-gray-100 text-left dark:border-gray-800">
-                  <th class="py-2 text-[11px] font-semibold uppercase tracking-wider text-gray-400">Lote</th>
-                  <th class="py-2 text-right text-[11px] font-semibold uppercase tracking-wider text-gray-400">Cantidad</th>
-                  <th class="py-2 text-[11px] font-semibold uppercase tracking-wider text-gray-400">Vence</th>
+                  <th class="py-2 pr-4 text-[11px] font-semibold uppercase tracking-wider text-gray-400">Lote</th>
+                  <th class="py-2 pr-8 text-right text-[11px] font-semibold uppercase tracking-wider text-gray-400">Cantidad</th>
+                  <th class="py-2 pr-4 text-[11px] font-semibold uppercase tracking-wider text-gray-400">Vence</th>
                   <th class="py-2 text-[11px] font-semibold uppercase tracking-wider text-gray-400">Estado</th>
                 </tr>
               </thead>
@@ -185,6 +204,9 @@ type ProductoFull = Product & { batches?: Batch[]; priceLogs?: PriceLog[] };
           }
         </div>
       </div>
+
+      <app-codigo-modal [abierto]="modal.abierto" [titulo]="modal.titulo" [subtitulo]="p.name"
+        [url]="modal.url" (cerrar)="modal.abierto = false" />
     }
   `,
 })
@@ -195,6 +217,7 @@ export class VentraProductoDetalleComponent implements OnInit {
   showLote = false;
   copied = '';
   error = '';
+  modal = { abierto: false, titulo: '', url: '' };
   imagePreview = '/images/product-placeholder.svg';
   form: Partial<Product> = {};
   lote: { lotCode?: string; quantity?: number; expiresAt?: string } = {};
@@ -252,6 +275,15 @@ export class VentraProductoDetalleComponent implements OnInit {
     if (days <= 15) return 'bg-warning-50 text-warning-600 dark:bg-warning-500/15 dark:text-warning-400';
     if (days <= 30) return 'bg-blue-light-50 text-blue-light-600 dark:bg-blue-light-500/15 dark:text-blue-light-400';
     return 'bg-success-50 text-success-600 dark:bg-success-500/15 dark:text-success-400';
+  }
+
+  verCodigo(tipo: 'barras' | 'qr') {
+    if (!this.p) return;
+    this.modal = {
+      abierto: true,
+      titulo: tipo === 'barras' ? 'Código de barras' : 'Código QR',
+      url: tipo === 'barras' ? this.api.barcodeUrl(this.p.id) : this.api.qrUrl(this.p.id),
+    };
   }
 
   copy(text: string) {

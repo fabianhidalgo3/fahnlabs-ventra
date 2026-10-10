@@ -9,6 +9,7 @@ import { AuthService } from '../../core/auth.service';
 import { ventraGridTheme, GRID_TEXT } from '../../core/grid';
 import { ThemeService } from '../../core/theme.service';
 import { PageHeaderComponent } from '../../shared/components/ventra/page-header.component';
+import { CodigoModalComponent } from '../../shared/components/ventra/codigo-modal.component';
 
 /** Escapa HTML para los cellRenderer basados en strings. */
 const esc = (v: unknown): string =>
@@ -17,7 +18,8 @@ const esc = (v: unknown): string =>
 @Component({
   selector: 'app-ventra-productos',
   standalone: true,
-  imports: [CommonModule, FormsModule, PageHeaderComponent, AgGridAngular],
+  imports: [CommonModule, FormsModule, PageHeaderComponent,
+    CodigoModalComponent, AgGridAngular],
   template: `
     <app-page-header title="Productos" subtitle="Inventario, precios, códigos y vencimientos">
       @if (auth.isAdmin) {
@@ -118,6 +120,9 @@ const esc = (v: unknown): string =>
       [defaultColDef]="defaultCol" domLayout="autoHeight" [rowHeight]="56" [localeText]="GRID_TEXT"
       [pagination]="true" [paginationPageSize]="20" [paginationPageSizeSelector]="[10, 20, 50]"
       (cellClicked)="onCell($event)" />
+
+    <app-codigo-modal [abierto]="modal.abierto" [titulo]="modal.titulo" [subtitulo]="modal.subtitulo"
+      [url]="modal.url" (cerrar)="modal.abierto = false" />
   `,
 })
 export class VentraProductosComponent implements OnInit {
@@ -129,6 +134,7 @@ export class VentraProductosComponent implements OnInit {
   editing?: Product;
   imageFile?: File;
   imagePreview = '/images/product-placeholder.svg';
+  modal = { abierto: false, titulo: '', subtitulo: '', url: '' };
   bulkPercent?: number;
   bulkCategory = '';
   bulkMsg = '';
@@ -259,10 +265,10 @@ export class VentraProductosComponent implements OnInit {
         this.remove(p);
         break;
       case 'barras':
-        window.open(this.api.barcodeUrl(p.id), '_blank');
+        this.modal = { abierto: true, titulo: 'Código de barras', subtitulo: p.name, url: this.api.barcodeUrl(p.id) };
         break;
       case 'qr':
-        window.open(this.api.qrUrl(p.id), '_blank');
+        this.modal = { abierto: true, titulo: 'Código QR', subtitulo: p.name, url: this.api.qrUrl(p.id) };
         break;
       case 'copiar-sku':
         this.copy(p, 'sku', btn!);
