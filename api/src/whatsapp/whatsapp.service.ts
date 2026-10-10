@@ -1,6 +1,9 @@
 import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { Client, LocalAuth, Message } from 'whatsapp-web.js';
 import * as QRCode from 'qrcode';
+import { execSync } from 'child_process';
+import { rmSync } from 'fs';
+import { join } from 'path';
 import { AssistantService } from '../assistant/assistant.service';
 
 export type WaStatus =
@@ -32,9 +35,27 @@ export class WhatsappService implements OnModuleInit, OnModuleDestroy {
     await this.client?.destroy().catch(() => undefined);
   }
 
-  private init() {
+  /**
+   * Los reinicios bruscos de la API dejan el Chromium de WhatsApp huérfano y el
+   * perfil bloqueado ("The browser is already running"). Antes de iniciar, se
+   * mata cualquier huérfano de ese perfil y se borran sus archivos de lock.
+   */
+  private limpiarSesionBloqueada() {
+    try {
+      // [s] evita que pkill mate a su propia shell (el patrón no se matchea a sí mismo)
+      execSync('pkill -f "wwebjs_auth/[s]ession" || true', { stdio: 'ignore' });
+    } catch {}
+    for (const lock of ['SingletonLock', 'SingletonCookie', 'SingletonSocket']) {
+      try {
+        rmSync(join('.wwebjs_auth', 'session', lock), { force: true });
+      } catch {}
+    }
+  }
+
+  private init(reintento = false) {
     this.status = 'INICIANDO';
     this.lastError = undefined;
+    this.limpiarSesionBloqueada();
     try {
       this.client = new Client({
         authStrategy: new LocalAuth({ dataPath: '.wwebjs_auth' }),
@@ -68,6 +89,11 @@ export class WhatsappService implements OnModuleInit, OnModuleDestroy {
       });
 
       void this.client.initialize().catch((e) => {
+        if (!reintento && String(e).includes('already running')) {
+          this.logger.warn('Perfil bloqueado por un proceso huérfano; limpiando y reintentando…');
+          setTimeout(() => this.init(true), 2000);
+          return;
+        }
         this.status = 'ERROR';
         this.lastError = String(e);
         this.logger.error(`No se pudo iniciar WhatsApp: ${e}`);
