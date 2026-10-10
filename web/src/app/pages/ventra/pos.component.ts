@@ -44,9 +44,9 @@ interface CartLine {
             <button (click)="addProduct(p)" [disabled]="p.stock <= 0"
               class="flex flex-col items-start rounded-xl border border-gray-200 p-3 text-left transition hover:border-brand-400 hover:shadow-sm active:scale-95 disabled:opacity-40 dark:border-gray-800 dark:hover:border-brand-500">
               @if (p.imageUrl) {
-                <img [src]="api.fileUrl(p.imageUrl)" class="mb-2 h-16 w-full rounded-lg object-cover" [alt]="p.name" />
+                <img [src]="api.fileUrl(p.imageUrl)" class="mb-2 h-16 w-full rounded-lg object-cover" [alt]="p.name" loading="lazy" onerror="this.src='/images/product-placeholder.svg'" />
               } @else {
-                <div class="mb-2 flex h-16 w-full items-center justify-center rounded-lg bg-gray-100 text-2xl dark:bg-gray-800">🛒</div>
+                <img src="/images/product-placeholder.svg" class="mb-2 h-16 w-full rounded-lg object-cover" [alt]="p.name" loading="lazy" />
               }
               <span class="line-clamp-2 text-sm font-medium leading-tight text-gray-800 dark:text-white/90">{{ p.name }}</span>
               <span class="mt-1 text-base font-bold text-brand-500">{{ clp(p.price) }}</span>

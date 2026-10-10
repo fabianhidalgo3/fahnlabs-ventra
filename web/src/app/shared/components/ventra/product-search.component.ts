@@ -31,6 +31,11 @@ import { PosBusService } from '../../../core/pos-bus.service';
           @for (p of results; track p.id) {
             <div (mousedown)="$event.preventDefault()" (click)="pick(p)"
               class="flex cursor-pointer items-center gap-3 border-b border-gray-50 px-4 py-2.5 last:border-0 hover:bg-gray-50 dark:border-gray-800/50 dark:hover:bg-white/[0.03]">
+              @if (p.imageUrl) {
+                <img [src]="api.fileUrl(p.imageUrl)" class="h-9 w-9 shrink-0 rounded-lg object-cover" [alt]="p.name" loading="lazy" onerror="this.src='/images/product-placeholder.svg'" />
+              } @else {
+                <img src="/images/product-placeholder.svg" class="h-9 w-9 shrink-0 rounded-lg object-cover" [alt]="p.name" loading="lazy" />
+              }
               <div class="min-w-0 flex-1">
                 <p class="truncate text-sm font-medium text-gray-800 dark:text-white/90">{{ p.name }}</p>
                 <p class="flex items-center gap-2 text-xs text-gray-400">
@@ -70,7 +75,7 @@ export class ProductSearchComponent implements OnDestroy {
   @ViewChild('inp') inp!: ElementRef<HTMLInputElement>;
 
   constructor(
-    private api: ApiService,
+    public api: ApiService,
     private router: Router,
     private posBus: PosBusService,
   ) {

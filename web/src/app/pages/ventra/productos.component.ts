@@ -101,9 +101,9 @@ import { AuthService } from '../../core/auth.service';
               <td class="sticky left-0 z-[5] bg-white px-5 py-3 group-hover:bg-gray-50 dark:bg-gray-900 dark:group-hover:bg-gray-800">
                 <div class="flex items-center gap-3">
                   @if (p.imageUrl) {
-                    <img [src]="api.fileUrl(p.imageUrl)" class="h-10 w-10 rounded-lg object-cover" [alt]="p.name" />
+                    <img [src]="api.fileUrl(p.imageUrl)" class="h-10 w-10 rounded-lg object-cover" [alt]="p.name" loading="lazy" onerror="this.src='/images/product-placeholder.svg'" />
                   } @else {
-                    <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-gray-100 text-gray-400 dark:bg-gray-800">📦</div>
+                    <img src="/images/product-placeholder.svg" class="h-10 w-10 rounded-lg object-cover" [alt]="p.name" loading="lazy" />
                   }
                   <div>
                     <p class="font-medium text-gray-800 dark:text-white/90">{{ p.name }}</p>

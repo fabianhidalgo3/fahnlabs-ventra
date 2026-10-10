@@ -37,7 +37,8 @@ import { ApiService, PurchaseDoc } from '../core/api.service';
             Fotografiar documento
           </ion-button>
         } @else {
-          <img [src]="preview" class="preview" alt="foto documento" />
+          <img [src]="preview" class="preview" alt="foto documento"
+            (error)="$any($event.target).src='/assets/product-placeholder.svg'" />
           <ion-select [(ngModel)]="type" label="Tipo" fill="outline" class="ion-margin-bottom">
             <ion-select-option value="GUIA">Guía de despacho</ion-select-option>
             <ion-select-option value="FACTURA">Factura</ion-select-option>
@@ -63,7 +64,8 @@ import { ApiService, PurchaseDoc } from '../core/api.service';
         @for (d of docs; track d.id) {
           <ion-item [href]="api.fileUrl(d.imageUrl)" target="_blank" [detail]="true">
             <ion-thumbnail slot="start">
-              <img [src]="api.fileUrl(d.imageUrl)" [alt]="d.folio ?? d.type" />
+              <img [src]="api.fileUrl(d.imageUrl)" [alt]="d.folio ?? d.type"
+                (error)="$any($event.target).src='/assets/product-placeholder.svg'" />
             </ion-thumbnail>
             <ion-label>
               <h2>{{ d.supplier ?? 'Sin proveedor' }} {{ d.folio ? '· #' + d.folio : '' }}</h2>
