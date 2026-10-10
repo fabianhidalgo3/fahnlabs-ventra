@@ -5,6 +5,7 @@ import type { ColDef, ICellRendererParams } from 'ag-grid-community';
 import { ApiService, BatchAlert, whatsappUrl } from '../../core/api.service';
 import { GRID_TEXT, ventraGridTheme } from '../../core/grid';
 import { ThemeService } from '../../core/theme.service';
+import { ViewportService } from '../../core/viewport.service';
 import { PageHeaderComponent } from '../../shared/components/ventra/page-header.component';
 
 @Component({
@@ -36,18 +37,37 @@ import { PageHeaderComponent } from '../../shared/components/ventra/page-header.
       <span class="text-sm text-gray-400">{{ alerts.length }} lotes</span>
     </div>
 
-    <ag-grid-angular
-      class="w-full"
-      [theme]="theme()"
-      [rowData]="alerts"
-      [columnDefs]="cols"
-      [defaultColDef]="defaultColDef"
-      domLayout="autoHeight"
-      [localeText]="GRID_TEXT"
-      [pagination]="true"
-      [paginationPageSize]="20"
-      [paginationPageSizeSelector]="false"
-    />
+    @if (vp.esMovil()) {
+      <div class="space-y-3">
+        @for (a of alerts; track $index) {
+          <div class="rounded-xl border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-gray-900">
+            <div class="flex items-start justify-between gap-3">
+              <div class="min-w-0">
+                <p class="font-medium text-gray-800 dark:text-white/90">{{ a.product.name }}</p>
+                <p class="text-xs text-gray-400">Lote {{ a.lotCode }} · {{ a.quantity }} un.</p>
+              </div>
+              <span class="shrink-0 rounded-full px-2.5 py-0.5 text-xs font-medium" [class]="badge(a.level)">{{ label(a) }}</span>
+            </div>
+            <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">Vence: {{ fmtDate(a.expiresAt) }}</p>
+          </div>
+        } @empty {
+          <p class="text-sm text-gray-400">Sin lotes próximos a vencer.</p>
+        }
+      </div>
+    } @else {
+      <ag-grid-angular
+        class="w-full"
+        [theme]="theme()"
+        [rowData]="alerts"
+        [columnDefs]="cols"
+        [defaultColDef]="defaultColDef"
+        domLayout="autoHeight"
+        [localeText]="GRID_TEXT"
+        [pagination]="true"
+        [paginationPageSize]="20"
+        [paginationPageSizeSelector]="false"
+      />
+    }
   `,
 })
 export class VentraVencimientosComponent implements OnInit {
@@ -55,6 +75,7 @@ export class VentraVencimientosComponent implements OnInit {
   days = 30;
 
   private themeSvc = inject(ThemeService);
+  public vp = inject(ViewportService);
   theme = computed(() => ventraGridTheme(this.themeSvc.isDark()));
   readonly GRID_TEXT = GRID_TEXT;
 
@@ -131,7 +152,7 @@ export class VentraVencimientosComponent implements OnInit {
     return whatsappUrl(`⚠️ Vencimientos próximos — Ventra\n\n${lines.join('\n')}`);
   }
 
-  private fmtDate(v?: string | null): string {
+  fmtDate(v?: string | null): string {
     if (!v) return '';
     const d = new Date(v);
     return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;

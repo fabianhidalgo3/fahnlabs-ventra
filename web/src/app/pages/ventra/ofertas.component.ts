@@ -7,6 +7,7 @@ import { ApiService, Category, Product, Promotion, PromoType } from '../../core/
 import { AuthService } from '../../core/auth.service';
 import { GRID_TEXT, ventraGridTheme } from '../../core/grid';
 import { ThemeService } from '../../core/theme.service';
+import { ViewportService } from '../../core/viewport.service';
 import { PageHeaderComponent } from '../../shared/components/ventra/page-header.component';
 
 @Component({
@@ -124,19 +125,56 @@ import { PageHeaderComponent } from '../../shared/components/ventra/page-header.
       </div>
     }
 
-    <ag-grid-angular
-      class="w-full"
-      [theme]="theme()"
-      [rowData]="promos"
-      [columnDefs]="cols"
-      [defaultColDef]="defaultColDef"
-      domLayout="autoHeight"
-      [localeText]="GRID_TEXT"
-      [pagination]="true"
-      [paginationPageSize]="20"
-      [paginationPageSizeSelector]="false"
-      (cellClicked)="onCell($event)"
-    />
+    @if (vp.esMovil()) {
+      <div class="space-y-3">
+        @for (pr of promos; track pr.id) {
+          <div class="rounded-xl border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-gray-900">
+            <div class="flex items-start justify-between gap-3">
+              <div class="min-w-0">
+                <p class="font-medium text-gray-800 dark:text-white/90">{{ pr.name }}</p>
+                <p class="text-xs text-gray-400">{{ typeLabel(pr.type) }}</p>
+              </div>
+              <span class="shrink-0 rounded-full px-2.5 py-0.5 text-xs font-medium"
+                [class]="pr.active
+                  ? 'bg-success-50 text-success-600 dark:bg-success-500/15 dark:text-success-400'
+                  : 'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400'">
+                {{ pr.active ? 'Activa' : 'Inactiva' }}
+              </span>
+            </div>
+            <p class="mt-2 text-sm font-medium text-brand-500">{{ rule(pr) }}</p>
+            <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">{{ scope(pr) }}</p>
+            <p class="text-xs text-gray-400">Vigencia: {{ validity(pr) }}</p>
+            @if (auth.isAdmin) {
+              <div class="mt-3 flex flex-wrap gap-2">
+                <button (click)="openForm(pr)" class="rounded border border-gray-300 px-2 py-1 text-xs dark:border-gray-700 dark:text-gray-300">Editar</button>
+                @if (pr.active) {
+                  <button (click)="toggle(pr)" class="rounded border border-warning-500 px-2 py-1 text-xs text-warning-600">Desactivar</button>
+                } @else {
+                  <button (click)="toggle(pr)" class="rounded border border-success-500 px-2 py-1 text-xs text-success-600">Activar</button>
+                }
+                <button (click)="remove(pr)" class="rounded border border-error-300 px-2 py-1 text-xs text-error-600">Eliminar</button>
+              </div>
+            }
+          </div>
+        } @empty {
+          <p class="text-sm text-gray-400">Sin ofertas.</p>
+        }
+      </div>
+    } @else {
+      <ag-grid-angular
+        class="w-full"
+        [theme]="theme()"
+        [rowData]="promos"
+        [columnDefs]="cols"
+        [defaultColDef]="defaultColDef"
+        domLayout="autoHeight"
+        [localeText]="GRID_TEXT"
+        [pagination]="true"
+        [paginationPageSize]="20"
+        [paginationPageSizeSelector]="false"
+        (cellClicked)="onCell($event)"
+      />
+    }
   `,
 })
 export class VentraOfertasComponent implements OnInit {
@@ -152,6 +190,7 @@ export class VentraOfertasComponent implements OnInit {
   endsAt = '';
 
   private themeSvc = inject(ThemeService);
+  public vp = inject(ViewportService);
   theme = computed(() => ventraGridTheme(this.themeSvc.isDark()));
   readonly GRID_TEXT = GRID_TEXT;
 

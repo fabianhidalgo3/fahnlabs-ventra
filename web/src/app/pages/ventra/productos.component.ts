@@ -7,6 +7,7 @@ import { AgGridAngular } from 'ag-grid-angular';
 import type { CellClickedEvent, ColDef, ICellRendererParams } from 'ag-grid-community';
 import { ApiService, Product, Category } from '../../core/api.service';
 import { AuthService } from '../../core/auth.service';
+import { ViewportService } from '../../core/viewport.service';
 import { ventraGridTheme, GRID_TEXT } from '../../core/grid';
 import { ThemeService } from '../../core/theme.service';
 import { PageHeaderComponent } from '../../shared/components/ventra/page-header.component';
@@ -118,10 +119,58 @@ const esc = (v: unknown): string =>
       </div>
     }
 
-    <ag-grid-angular class="w-full" [theme]="theme()" [rowData]="products" [columnDefs]="cols"
-      [defaultColDef]="defaultCol" domLayout="autoHeight" [rowHeight]="56" [localeText]="GRID_TEXT"
-      [pagination]="true" [paginationPageSize]="20" [paginationPageSizeSelector]="[10, 20, 50]"
-      (cellClicked)="onCell($event)" />
+    @if (vp.esMovil()) {
+      <!-- Vista móvil: cards -->
+      <div class="space-y-3">
+        @for (p of products; track p.id) {
+          <div class="rounded-xl border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-gray-900">
+            <!-- Fila 1: imagen, nombre/categoría, precio -->
+            <div class="flex items-start gap-3">
+              <img [src]="p.imageUrl ? api.fileUrl(p.imageUrl) : '/images/product-placeholder.svg'" [alt]="p.name"
+                loading="lazy" class="h-14 w-14 shrink-0 rounded-lg object-cover"
+                (error)="$any($event.target).src = '/images/product-placeholder.svg'" />
+              <div class="min-w-0 flex-1">
+                <p (click)="router.navigate(['/productos', p.id])"
+                  class="cursor-pointer truncate font-bold text-gray-800 hover:text-brand-500 dark:text-white/90">{{ p.name }}</p>
+                <p class="truncate text-xs text-gray-400">{{ p.category?.name ?? '—' }}</p>
+              </div>
+              <p class="shrink-0 font-bold text-brand-500">{{ clp(p.price) }}</p>
+            </div>
+            <!-- Fila 2: SKU / código, vencimiento, stock -->
+            <div class="mt-3 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-gray-400">
+              <span>{{ p.sku }}</span>
+              <span>·</span>
+              <span>{{ p.barcode }}</span>
+              @if (p.daysToExpiry != null) {
+                <span class="rounded-full px-2.5 py-0.5 font-medium" [class]="badge(p.daysToExpiry)">
+                  {{ p.daysToExpiry < 0 ? 'Vencido' : p.daysToExpiry + ' días' }}
+                </span>
+              }
+              <span class="ml-auto font-medium"
+                [class]="p.stock <= p.minStock ? 'text-error-600' : 'text-gray-600 dark:text-gray-300'">stock {{ p.stock }}</span>
+            </div>
+            <!-- Fila 3: acciones -->
+            <div class="mt-3 flex flex-wrap items-center gap-2">
+              <button (click)="modal = { abierto: true, titulo: 'Código de barras', subtitulo: p.name, url: api.barcodeUrl(p.id) }"
+                class="rounded border border-gray-300 px-2.5 py-1.5 text-xs text-gray-700 dark:border-gray-700 dark:text-gray-300">Barras</button>
+              <button (click)="modal = { abierto: true, titulo: 'Código QR', subtitulo: p.name, url: api.qrUrl(p.id) }"
+                class="rounded border border-gray-300 px-2.5 py-1.5 text-xs text-gray-700 dark:border-gray-700 dark:text-gray-300">QR</button>
+              @if (auth.isAdmin) {
+                <button (click)="router.navigate(['/productos', p.id], { queryParams: { editar: 1 } })"
+                  class="rounded border border-gray-300 px-2.5 py-1.5 text-xs text-gray-700 dark:border-gray-700 dark:text-gray-300">Editar</button>
+                <button (click)="remove(p)"
+                  class="rounded border border-error-300 px-2.5 py-1.5 text-xs text-error-600">Eliminar</button>
+              }
+            </div>
+          </div>
+        }
+      </div>
+    } @else {
+      <ag-grid-angular class="w-full" [theme]="theme()" [rowData]="products" [columnDefs]="cols"
+        [defaultColDef]="defaultCol" domLayout="autoHeight" [rowHeight]="56" [localeText]="GRID_TEXT"
+        [pagination]="true" [paginationPageSize]="20" [paginationPageSizeSelector]="[10, 20, 50]"
+        (cellClicked)="onCell($event)" />
+    }
 
     <app-codigo-modal [abierto]="modal.abierto" [titulo]="modal.titulo" [subtitulo]="modal.subtitulo"
       [url]="modal.url" (cerrar)="modal.abierto = false" />
@@ -152,7 +201,8 @@ export class VentraProductosComponent implements OnInit {
   constructor(
     public api: ApiService,
     public auth: AuthService,
-    private router: Router,
+    public router: Router,
+    public vp: ViewportService,
   ) {
     this.cols = this.buildCols();
   }

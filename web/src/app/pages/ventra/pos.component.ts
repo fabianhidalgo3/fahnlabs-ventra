@@ -18,7 +18,7 @@ interface CartLine {
   template: `
     <div class="grid grid-cols-1 gap-4 xl:grid-cols-5">
       <!-- ===== Catálogo (izquierda) ===== -->
-      <div class="xl:col-span-3 flex flex-col rounded-2xl border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-gray-900">
+      <div class="order-2 xl:order-none xl:col-span-3 flex flex-col rounded-2xl border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-gray-900">
         <input #scanInput [(ngModel)]="scanCode" (keydown.enter)="addByCode()" (input)="filterGrid()" autofocus
           placeholder="🔍 Escanear código o buscar producto…"
           class="mx-auto mb-3 block h-14 w-full max-w-xl rounded-xl border-2 border-brand-300 bg-white px-4 text-center text-lg focus:border-brand-500 focus:outline-none dark:bg-gray-900 dark:text-white/90" />
@@ -117,7 +117,7 @@ interface CartLine {
       </div>
 
       <!-- ===== Ticket (derecha) ===== -->
-      <div class="xl:col-span-2 flex flex-col rounded-2xl border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-gray-900">
+      <div class="order-1 xl:order-none xl:col-span-2 flex flex-col rounded-2xl border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-gray-900">
         <div class="mb-3 flex items-center justify-between">
           <h3 class="text-lg font-semibold text-gray-800 dark:text-white/90">🧾 Venta actual</h3>
           @if (cart.length) {

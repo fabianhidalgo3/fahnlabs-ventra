@@ -5,6 +5,7 @@ import { AgGridAngular } from 'ag-grid-angular';
 import type { CellClickedEvent, ColDef, ICellRendererParams, RowClassRules } from 'ag-grid-community';
 import { ApiService, Sale } from '../../core/api.service';
 import { AuthService } from '../../core/auth.service';
+import { ViewportService } from '../../core/viewport.service';
 import { ventraGridTheme, GRID_TEXT } from '../../core/grid';
 import { ThemeService } from '../../core/theme.service';
 import { PageHeaderComponent } from '../../shared/components/ventra/page-header.component';
@@ -35,10 +36,52 @@ const pad = (n: number) => String(n).padStart(2, '0');
       <span class="text-sm text-gray-400">{{ sales.length }} ventas</span>
     </div>
 
-    <ag-grid-angular class="w-full" [theme]="theme()" [rowData]="sales" [columnDefs]="cols"
-      [defaultColDef]="defaultCol" domLayout="autoHeight" [localeText]="GRID_TEXT"
-      [rowClassRules]="rowRules" [pagination]="true" [paginationPageSize]="20"
-      [paginationPageSizeSelector]="[10, 20, 50]" (cellClicked)="onCell($event)" />
+    @if (vp.esMovil()) {
+      <!-- Vista móvil: cards -->
+      <div class="space-y-3">
+        @for (s of sales; track s.id) {
+          <div class="rounded-xl border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-gray-900"
+            [class.opacity-50]="!!s.voidedAt">
+            <!-- Fila 1: número, fecha, estado -->
+            <div class="flex flex-wrap items-center gap-2">
+              <p class="font-bold text-gray-800 dark:text-white/90">N° {{ s.number }}</p>
+              <p class="text-xs text-gray-400">{{ s.createdAt | date: 'dd/MM/yy HH:mm' }}</p>
+              <span class="ml-auto rounded-full px-2.5 py-1 text-xs font-medium"
+                [class]="s.voidedAt
+                  ? 'bg-error-50 text-error-600 dark:bg-error-500/15 dark:text-error-400'
+                  : 'bg-success-50 text-success-600 dark:bg-success-500/15 dark:text-success-400'">
+                {{ s.voidedAt ? 'ANULADA' : 'Emitida' }}
+              </span>
+            </div>
+            <!-- Fila 2: ítems, pago, descuento, total -->
+            <div class="mt-3 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-gray-500 dark:text-gray-400">
+              <span [title]="itemNames(s)">{{ s.items.length }} ítems</span>
+              <span>·</span>
+              <span>{{ s.payment }}</span>
+              @if (s.discount > 0) { <span>-{{ clp(s.discount) }}</span> }
+              <span class="ml-auto font-bold text-gray-800 dark:text-white/90">{{ clp(s.total) }}</span>
+            </div>
+            <!-- Fila 3: boleta y anulación -->
+            @if (s.boleta?.pdfPath || (auth.isAdmin && !s.voidedAt)) {
+              <div class="mt-3 flex items-center gap-2">
+                @if (s.boleta?.pdfPath) {
+                  <button (click)="openBoleta(s)" class="text-sm text-brand-500 hover:underline">Folio {{ s.boleta?.folio }}</button>
+                }
+                @if (auth.isAdmin && !s.voidedAt) {
+                  <button (click)="this.void(s)"
+                    class="ml-auto rounded border border-error-300 px-2.5 py-1.5 text-xs text-error-600">Anular</button>
+                }
+              </div>
+            }
+          </div>
+        }
+      </div>
+    } @else {
+      <ag-grid-angular class="w-full" [theme]="theme()" [rowData]="sales" [columnDefs]="cols"
+        [defaultColDef]="defaultCol" domLayout="autoHeight" [localeText]="GRID_TEXT"
+        [rowClassRules]="rowRules" [pagination]="true" [paginationPageSize]="20"
+        [paginationPageSizeSelector]="[10, 20, 50]" (cellClicked)="onCell($event)" />
+    }
   `,
 })
 export class VentraVentasComponent implements OnInit {
@@ -57,6 +100,7 @@ export class VentraVentasComponent implements OnInit {
   constructor(
     public api: ApiService,
     public auth: AuthService,
+    public vp: ViewportService,
   ) {
     this.cols = this.buildCols();
   }
@@ -147,8 +191,12 @@ export class VentraVentasComponent implements OnInit {
     const action = (e.event?.target as HTMLElement)?.closest('[data-action]')?.getAttribute('data-action');
     const s = e.data;
     if (!action || !s) return;
-    if (action === 'boleta' && s.boleta?.pdfPath) window.open(this.api.fileUrl(s.boleta.pdfPath), '_blank');
+    if (action === 'boleta') this.openBoleta(s);
     if (action === 'anular') this.void(s);
+  }
+
+  openBoleta(s: Sale) {
+    if (s.boleta?.pdfPath) window.open(this.api.fileUrl(s.boleta.pdfPath), '_blank');
   }
 
   ngOnInit() {

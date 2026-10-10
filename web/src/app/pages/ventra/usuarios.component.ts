@@ -6,6 +6,7 @@ import type { CellClickedEvent, ColDef, ICellRendererParams } from 'ag-grid-comm
 import { API_URL } from '../../core/api.service';
 import { GRID_TEXT, ventraGridTheme } from '../../core/grid';
 import { ThemeService } from '../../core/theme.service';
+import { ViewportService } from '../../core/viewport.service';
 import { PageHeaderComponent } from '../../shared/components/ventra/page-header.component';
 
 interface AppUser {
@@ -52,16 +53,52 @@ interface AppUser {
       </div>
     }
 
-    <ag-grid-angular
-      class="w-full"
-      [theme]="theme()"
-      [rowData]="users"
-      [columnDefs]="cols"
-      [defaultColDef]="defaultColDef"
-      domLayout="autoHeight"
-      [localeText]="GRID_TEXT"
-      (cellClicked)="onCell($event)"
-    />
+    @if (vp.esMovil()) {
+      <div class="space-y-3">
+        @for (u of users; track u.id) {
+          <div class="rounded-xl border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-gray-900">
+            <p class="font-medium text-gray-800 dark:text-white/90">{{ u.name }}</p>
+            <p class="text-xs text-gray-400">{{ u.email }}</p>
+            <div class="mt-2 flex flex-wrap items-center gap-2">
+              <span class="rounded-full px-2.5 py-1 text-xs font-medium"
+                [class]="u.role === 'ADMIN'
+                  ? 'bg-brand-50 text-brand-600 dark:bg-brand-500/15 dark:text-brand-400'
+                  : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-300'">
+                {{ u.role === 'ADMIN' ? 'Administrador' : 'Vendedor' }}
+              </span>
+              <span class="rounded-full px-2.5 py-1 text-xs font-medium"
+                [class]="u.active
+                  ? 'bg-success-50 text-success-600 dark:bg-success-500/15 dark:text-success-400'
+                  : 'bg-error-50 text-error-600 dark:bg-error-500/15 dark:text-error-400'">
+                {{ u.active ? 'Activo' : 'Inactivo' }}
+              </span>
+            </div>
+            <p class="mt-2 text-xs text-gray-400">Creado: {{ fmtDate(u.createdAt) }}</p>
+            <div class="mt-3 flex flex-wrap gap-2">
+              <button (click)="openForm(u)" class="rounded border border-gray-300 px-2 py-1 text-xs dark:border-gray-700 dark:text-gray-300">Editar</button>
+              @if (u.active) {
+                <button (click)="deactivate(u)" class="rounded border border-error-300 px-2 py-1 text-xs text-error-600">Desactivar</button>
+              } @else {
+                <button (click)="activate(u)" class="rounded border border-success-300 px-2 py-1 text-xs text-success-600">Activar</button>
+              }
+            </div>
+          </div>
+        } @empty {
+          <p class="text-sm text-gray-400">Sin usuarios.</p>
+        }
+      </div>
+    } @else {
+      <ag-grid-angular
+        class="w-full"
+        [theme]="theme()"
+        [rowData]="users"
+        [columnDefs]="cols"
+        [defaultColDef]="defaultColDef"
+        domLayout="autoHeight"
+        [localeText]="GRID_TEXT"
+        (cellClicked)="onCell($event)"
+      />
+    }
   `,
 })
 export class VentraUsuariosComponent implements OnInit {
@@ -72,6 +109,7 @@ export class VentraUsuariosComponent implements OnInit {
   form: { name?: string; email?: string; password?: string; role: 'ADMIN' | 'VENDEDOR' } = { role: 'VENDEDOR' };
 
   private themeSvc = inject(ThemeService);
+  public vp = inject(ViewportService);
   theme = computed(() => ventraGridTheme(this.themeSvc.isDark()));
   readonly GRID_TEXT = GRID_TEXT;
 
@@ -201,7 +239,7 @@ export class VentraUsuariosComponent implements OnInit {
     this.http.patch(`${API_URL}/users/${u.id}`, { active: true }).subscribe(() => this.load());
   }
 
-  private fmtDate(v?: string | null): string {
+  fmtDate(v?: string | null): string {
     if (!v) return '';
     const d = new Date(v);
     return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
