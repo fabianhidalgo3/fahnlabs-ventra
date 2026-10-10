@@ -3,6 +3,7 @@ import { AppLayoutComponent } from './shared/layout/app-layout/app-layout.compon
 import { NotFoundComponent } from './pages/other-page/not-found/not-found.component';
 import { VentraDashboardComponent } from './pages/ventra/dashboard.component';
 import { VentraProductosComponent } from './pages/ventra/productos.component';
+import { VentraProductoDetalleComponent } from './pages/ventra/producto-detalle.component';
 import { VentraPosComponent } from './pages/ventra/pos.component';
 import { VentraVencimientosComponent } from './pages/ventra/vencimientos.component';
 import { VentraReportesComponent } from './pages/ventra/reportes.component';
@@ -31,6 +32,11 @@ export const routes: Routes = [
         path: 'productos',
         component: VentraProductosComponent,
         title: 'Productos | Ventra by FHAN Labs',
+      },
+      {
+        path: 'productos/:id',
+        component: VentraProductoDetalleComponent,
+        title: 'Detalle de producto | Ventra by FHAN Labs',
       },
       {
         path: 'pos',

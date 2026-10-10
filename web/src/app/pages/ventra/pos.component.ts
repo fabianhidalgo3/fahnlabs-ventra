@@ -20,7 +20,7 @@ interface CartLine {
       <div class="xl:col-span-3 flex flex-col rounded-2xl border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-gray-900">
         <input #scanInput [(ngModel)]="scanCode" (keydown.enter)="addByCode()" (input)="filterGrid()" autofocus
           placeholder="🔍 Escanear código o buscar producto…"
-          class="mb-3 h-14 w-full rounded-xl border-2 border-brand-300 bg-white px-4 text-lg focus:border-brand-500 focus:outline-none dark:bg-gray-900 dark:text-white/90" />
+          class="mx-auto mb-3 block h-14 w-full max-w-xl rounded-xl border-2 border-brand-300 bg-white px-4 text-center text-lg focus:border-brand-500 focus:outline-none dark:bg-gray-900 dark:text-white/90" />
 
         <div class="mb-3 flex flex-wrap gap-2">
           <button (click)="selectCat('')"
@@ -39,23 +39,60 @@ interface CartLine {
 
         @if (error) { <p class="mb-2 text-sm text-error-600">{{ error }}</p> }
 
-        <div class="grid max-h-[62vh] grid-cols-2 gap-3 overflow-y-auto sm:grid-cols-3 lg:grid-cols-4">
-          @for (p of visible; track p.id) {
-            <button (click)="addProduct(p)" [disabled]="p.stock <= 0"
-              class="flex flex-col items-start rounded-xl border border-gray-200 p-3 text-left shadow-theme-xs transition hover:border-brand-400 hover:shadow-sm hover:ring-2 hover:ring-brand-500/30 active:scale-95 disabled:opacity-40 dark:border-gray-800 dark:hover:border-brand-500">
-              @if (p.imageUrl) {
-                <img [src]="api.fileUrl(p.imageUrl)" class="mb-2 h-16 w-full rounded-lg object-cover" [alt]="p.name" loading="lazy" onerror="this.src='/images/product-placeholder.svg'" />
-              } @else {
-                <img src="/images/product-placeholder.svg" class="mb-2 h-16 w-full rounded-lg object-cover" [alt]="p.name" loading="lazy" />
-              }
-              <span class="line-clamp-2 text-sm font-medium leading-tight text-gray-800 dark:text-white/90">{{ p.name }}</span>
-              <span class="mt-1 text-base font-bold text-brand-500">{{ clp(p.price) }}</span>
-              <span class="text-xs" [class]="p.stock <= p.minStock ? 'text-error-500' : 'text-gray-400'">stock {{ p.stock }}</span>
-            </button>
-          } @empty {
-            <p class="col-span-full py-10 text-center text-gray-400">Sin productos para este filtro</p>
-          }
+        <div class="mb-2 flex items-center justify-end gap-1">
+          <button (click)="setVista('grilla')" title="Vista grilla"
+            class="rounded-lg p-2" [class]="vista === 'grilla' ? 'bg-brand-50 text-brand-600 dark:bg-brand-500/15 dark:text-brand-400' : 'text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+          </button>
+          <button (click)="setVista('lista')" title="Vista lista"
+            class="rounded-lg p-2" [class]="vista === 'lista' ? 'bg-brand-50 text-brand-600 dark:bg-brand-500/15 dark:text-brand-400' : 'text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M8 6h13M8 12h13M8 18h13"/><circle cx="4" cy="6" r="1" fill="currentColor"/><circle cx="4" cy="12" r="1" fill="currentColor"/><circle cx="4" cy="18" r="1" fill="currentColor"/></svg>
+          </button>
         </div>
+
+        @if (vista === 'grilla') {
+          <div class="grid max-h-[62vh] grid-cols-2 gap-3 overflow-y-auto sm:grid-cols-3 lg:grid-cols-4">
+            @for (p of visible; track p.id) {
+              <button (click)="addProduct(p)" [disabled]="p.stock <= 0"
+                class="flex flex-col items-stretch rounded-xl border border-gray-200 text-left shadow-theme-xs transition hover:border-brand-400 hover:shadow-sm hover:ring-2 hover:ring-brand-500/30 active:scale-95 disabled:opacity-40 dark:border-gray-800 dark:hover:border-brand-500">
+                <span class="relative block">
+                  <img [src]="p.imageUrl ? api.fileUrl(p.imageUrl) : '/images/product-placeholder.svg'"
+                    class="h-32 w-full rounded-t-xl bg-gray-50 object-cover dark:bg-gray-800" [alt]="p.name" loading="lazy"
+                    onerror="this.onerror=null;this.src='/images/product-placeholder.svg'" />
+                  <span class="absolute right-1.5 top-1.5 rounded-md bg-brand-500 px-1.5 py-0.5 text-[11px] font-semibold text-white shadow-sm">
+                    {{ p.stock }}
+                  </span>
+                </span>
+                <span class="flex flex-1 flex-col p-3 pt-2">
+                  <span class="line-clamp-2 text-sm font-medium leading-tight text-gray-800 dark:text-white/90">{{ p.name }}</span>
+                  <span class="mt-1 text-base font-bold text-brand-500">{{ clp(p.price) }}</span>
+                </span>
+              </button>
+            } @empty {
+              <p class="col-span-full py-10 text-center text-gray-400">Sin productos para este filtro</p>
+            }
+          </div>
+        } @else {
+          <div class="max-h-[62vh] divide-y divide-gray-50 overflow-y-auto rounded-xl border border-gray-200 dark:divide-gray-800/60 dark:border-gray-800">
+            @for (p of visible; track p.id) {
+              <button (click)="addProduct(p)" [disabled]="p.stock <= 0"
+                class="flex w-full items-center gap-3 px-3 py-2 text-left transition hover:bg-gray-50 active:bg-brand-50 disabled:opacity-40 dark:hover:bg-white/[0.04]">
+                <img [src]="p.imageUrl ? api.fileUrl(p.imageUrl) : '/images/product-placeholder.svg'"
+                  class="h-14 w-14 shrink-0 rounded-lg bg-gray-50 object-cover dark:bg-gray-800" [alt]="p.name" loading="lazy"
+                  onerror="this.onerror=null;this.src='/images/product-placeholder.svg'" />
+                <span class="min-w-0 flex-1">
+                  <span class="block truncate text-sm font-medium text-gray-800 dark:text-white/90">{{ p.name }}</span>
+                  <span class="text-xs text-gray-400">{{ p.category?.name ?? '—' }} ·
+                    <span [class]="p.stock <= p.minStock ? 'text-error-500' : ''">stock {{ p.stock }}</span>
+                  </span>
+                </span>
+                <span class="text-base font-bold text-brand-500">{{ clp(p.price) }}</span>
+              </button>
+            } @empty {
+              <p class="py-10 text-center text-gray-400">Sin productos para este filtro</p>
+            }
+          </div>
+        }
       </div>
 
       <!-- ===== Ticket (derecha) ===== -->
@@ -207,6 +244,7 @@ export class VentraPosComponent implements OnInit, OnDestroy {
   promoQuote: PromoQuote | null = null;
   quickBills = [1000, 2000, 5000, 10000, 20000];
   parked: { name: string; lines: CartLine[] }[] = [];
+  vista: 'grilla' | 'lista' = (localStorage.getItem('ventra_pos_vista') as 'grilla' | 'lista') || 'grilla';
   private busSub?: Subscription;
   @ViewChild('scanInput') scanInput?: ElementRef<HTMLInputElement>;
 
@@ -301,6 +339,13 @@ export class VentraPosComponent implements OnInit, OnDestroy {
   private saveParked() {
     try {
       localStorage.setItem('ventra_parked', JSON.stringify(this.parked));
+    } catch {}
+  }
+
+  setVista(v: 'grilla' | 'lista') {
+    this.vista = v;
+    try {
+      localStorage.setItem('ventra_pos_vista', v);
     } catch {}
   }
 

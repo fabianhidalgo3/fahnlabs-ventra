@@ -1,3 +1,4 @@
+import { Router } from '@angular/router';
 import { Component, OnInit, computed, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -143,6 +144,7 @@ export class VentraProductosComponent implements OnInit {
   constructor(
     public api: ApiService,
     public auth: AuthService,
+    private router: Router,
   ) {
     this.cols = this.buildCols();
   }
@@ -176,7 +178,7 @@ export class VentraProductosComponent implements OnInit {
             <img src="${esc(src)}" alt="${esc(d.name)}" loading="lazy" class="h-9 w-9 shrink-0 rounded-lg object-cover"
               onerror="this.onerror=null;this.src='/images/product-placeholder.svg'" />
             <div class="leading-tight">
-              <p class="font-medium text-gray-800 dark:text-white/90">${esc(d.name)}</p>
+              <p data-action="ver" class="cursor-pointer font-medium text-gray-800 hover:text-brand-500 hover:underline dark:text-white/90">${esc(d.name)}</p>
               <p class="text-xs text-gray-400">${esc(d.category?.name ?? '—')}</p>
             </div>
           </div>`;
@@ -247,8 +249,11 @@ export class VentraProductosComponent implements OnInit {
     const p = e.data;
     if (!action || !p) return;
     switch (action) {
+      case 'ver':
+        this.router.navigate(['/productos', p.id]);
+        break;
       case 'editar':
-        this.openForm(p);
+        this.router.navigate(['/productos', p.id], { queryParams: { editar: 1 } });
         break;
       case 'eliminar':
         this.remove(p);
