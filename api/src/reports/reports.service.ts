@@ -1,6 +1,16 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import * as ExcelJS from 'exceljs';
+import {
+  VENTRA_LOGO_SVG,
+  VENTRA_BLUE,
+  VENTRA_INK,
+  VENTRA_GRAY,
+  VENTRA_GRAY_LIGHT,
+  VENTRA_BG_SOFT,
+  VENTRA_BG_KPI,
+  clp,
+} from '../shared/branding';
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const PdfPrinter = require('pdfmake');
 
@@ -110,7 +120,6 @@ export class ReportsService {
 
   async exportPdf(from?: string, to?: string): Promise<Buffer> {
     const s = await this.summary(from, to, 'day');
-    const clp = (n: number) => '$' + Math.round(n).toLocaleString('es-CL');
     const printer = new PdfPrinter({
       Helvetica: {
         normal: 'Helvetica',
@@ -119,29 +128,120 @@ export class ReportsService {
         bolditalics: 'Helvetica-BoldOblique',
       },
     });
+
+    // Celda KPI con fondo gris claro y valor destacado
+    const kpi = (label: string, value: string) => ({
+      table: {
+        widths: ['*'],
+        body: [
+          [
+            {
+              stack: [
+                {
+                  text: label.toUpperCase(),
+                  fontSize: 7.5,
+                  color: VENTRA_GRAY,
+                  characterSpacing: 0.5,
+                },
+                { text: value, bold: true, fontSize: 13, color: VENTRA_INK, margin: [0, 3, 0, 0] },
+              ],
+              margin: [10, 8, 10, 8],
+              fillColor: VENTRA_BG_KPI,
+            },
+          ],
+        ],
+      },
+      layout: 'noBorders',
+    });
+
+    // Layout de tabla: encabezado azul, zebra striping suave, sin líneas verticales
+    const brandedTableLayout = {
+      hLineWidth: (i: number, node: any) =>
+        i === 0 || i === 1 || i === node.table.body.length ? 0.5 : 0,
+      vLineWidth: () => 0,
+      hLineColor: () => VENTRA_GRAY_LIGHT,
+      fillColor: (rowIndex: number) =>
+        rowIndex === 0 ? VENTRA_BLUE : rowIndex % 2 === 0 ? VENTRA_BG_SOFT : null,
+      paddingLeft: () => 8,
+      paddingRight: () => 8,
+      paddingTop: () => 5,
+      paddingBottom: () => 5,
+    };
+    const th = (text: string, alignment: 'left' | 'right' = 'left') => ({
+      text,
+      bold: true,
+      color: '#FFFFFF',
+      fontSize: 9,
+      alignment,
+    });
+
+    const generado = new Date().toLocaleString('es-CL');
+
     const doc = printer.createPdfKitDocument({
-      defaultStyle: { font: 'Helvetica', fontSize: 9 },
+      pageSize: 'A4',
+      pageMargins: [40, 42, 40, 60],
+      defaultStyle: { font: 'Helvetica', fontSize: 9, color: VENTRA_INK },
+      footer: (currentPage: number, pageCount: number) => ({
+        columns: [
+          {
+            text: `Generado el ${generado} · Ventra by FHAN Labs`,
+            fontSize: 7.5,
+            color: VENTRA_GRAY,
+          },
+          {
+            text: `Página ${currentPage} de ${pageCount}`,
+            alignment: 'right',
+            fontSize: 7.5,
+            color: VENTRA_GRAY,
+          },
+        ],
+        margin: [40, 24, 40, 0],
+      }),
       content: [
-        { text: 'Ventra — Reporte de ventas', bold: true, fontSize: 14 },
-        {
-          text: `Período: ${s.from.toLocaleDateString('es-CL')} a ${s.to.toLocaleDateString('es-CL')}`,
-          margin: [0, 2, 0, 10],
-        },
+        // ── Encabezado: logo + título/período ────────────────
         {
           columns: [
-            { text: `Ventas: ${s.totals.ventas}`, bold: true },
-            { text: `Neto: ${clp(s.totals.neto)}` },
-            { text: `IVA: ${clp(s.totals.iva)}` },
-            { text: `Total: ${clp(s.totals.total)}`, bold: true },
+            { svg: VENTRA_LOGO_SVG, width: 120, margin: [0, 2, 0, 0] },
+            {
+              stack: [
+                { text: 'Reporte de ventas', bold: true, fontSize: 16, alignment: 'right' },
+                {
+                  text: `Período: ${s.from.toLocaleDateString('es-CL')} — ${s.to.toLocaleDateString('es-CL')}`,
+                  alignment: 'right',
+                  color: VENTRA_GRAY,
+                  margin: [0, 4, 0, 0],
+                },
+              ],
+            },
           ],
-          margin: [0, 0, 0, 10],
         },
-        { text: 'Por día', bold: true, margin: [0, 6, 0, 4] },
+        {
+          canvas: [
+            { type: 'line', x1: 0, y1: 0, x2: 515, y2: 0, lineWidth: 1.5, lineColor: VENTRA_BLUE },
+          ],
+          margin: [0, 12, 0, 16],
+        },
+
+        // ── KPIs ─────────────────────────────────────────────
+        {
+          columns: [
+            kpi('Ventas', String(s.totals.ventas)),
+            kpi('Neto', clp(s.totals.neto)),
+            kpi('IVA', clp(s.totals.iva)),
+            kpi('Total', clp(s.totals.total)),
+          ],
+          columnGap: 10,
+          margin: [0, 0, 0, 20],
+        },
+
+        // ── Por día ──────────────────────────────────────────
+        { text: 'Por día', bold: true, fontSize: 11, margin: [0, 0, 0, 6] },
         {
           table: {
-            widths: ['*', 60, 90],
+            headerRows: 1,
+            widths: ['*', 70, 100],
             body: [
-              ['Día', 'Ventas', 'Total'].map((t) => ({ text: t, bold: true })),
+              [th('Día'), th('Ventas', 'right'), th('Total', 'right')],
               ...s.series.map((r) => [
                 new Date(r.bucket).toLocaleDateString('es-CL'),
                 { text: String(r.ventas), alignment: 'right' },
@@ -149,14 +249,17 @@ export class ReportsService {
               ]),
             ],
           },
-          layout: 'lightHorizontalLines',
+          layout: brandedTableLayout,
         },
-        { text: 'Top productos', bold: true, margin: [0, 12, 0, 4] },
+
+        // ── Top productos ────────────────────────────────────
+        { text: 'Top productos', bold: true, fontSize: 11, margin: [0, 18, 0, 6] },
         {
           table: {
-            widths: ['*', 60, 90],
+            headerRows: 1,
+            widths: ['*', 70, 100],
             body: [
-              ['Producto', 'Unidades', 'Total'].map((t) => ({ text: t, bold: true })),
+              [th('Producto'), th('Unidades', 'right'), th('Total', 'right')],
               ...s.topProducts.map((t) => [
                 t.name,
                 { text: String(t.unidades), alignment: 'right' },
@@ -164,7 +267,7 @@ export class ReportsService {
               ]),
             ],
           },
-          layout: 'lightHorizontalLines',
+          layout: brandedTableLayout,
         },
       ],
     });

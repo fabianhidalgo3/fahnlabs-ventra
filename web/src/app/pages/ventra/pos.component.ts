@@ -2,7 +2,7 @@ import { Component, ElementRef, OnDestroy, OnInit, ViewChild } from '@angular/co
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Subscription } from 'rxjs';
-import { ApiService, Product, Category, Sale, whatsappUrl } from '../../core/api.service';
+import { ApiService, Product, Category, Sale, PromoQuote, whatsappUrl } from '../../core/api.service';
 import { PosBusService } from '../../core/pos-bus.service';
 
 interface CartLine {
@@ -87,7 +87,7 @@ interface CartLine {
               </div>
               <button (click)="line.quantity = line.quantity - 1; cleanZero()" class="h-9 w-9 rounded-lg border border-gray-300 text-lg font-bold dark:border-gray-700 dark:text-gray-300">−</button>
               <span class="w-8 text-center text-base font-bold text-gray-800 dark:text-white/90">{{ line.quantity }}</span>
-              <button (click)="line.quantity = line.quantity + 1" class="h-9 w-9 rounded-lg border border-gray-300 text-lg font-bold dark:border-gray-700 dark:text-gray-300">+</button>
+              <button (click)="line.quantity = line.quantity + 1; refreshQuote()" class="h-9 w-9 rounded-lg border border-gray-300 text-lg font-bold dark:border-gray-700 dark:text-gray-300">+</button>
               <span class="w-20 text-right text-sm font-semibold text-gray-800 dark:text-white/90">{{ clp(line.quantity * line.product.price) }}</span>
             </div>
           } @empty {
@@ -107,6 +107,12 @@ interface CartLine {
                 class="h-9 w-24 rounded-lg border border-gray-300 bg-transparent px-2 text-right text-sm dark:border-gray-700 dark:text-white/90" />
             </div>
           </div>
+          @if (promoDiscount > 0) {
+            <div class="mt-2 flex items-center justify-between" [title]="promoNames">
+              <span class="cursor-help text-sm font-medium text-success-600 dark:text-success-400">🏷 Ofertas ({{ promoQuote?.detail?.length }})</span>
+              <span class="text-sm font-semibold text-success-600 dark:text-success-400">−{{ clp(promoDiscount) }}</span>
+            </div>
+          }
           <div class="mt-2 flex justify-between text-xs text-gray-400">
             <span>Neto {{ clp(neto) }}</span><span>IVA 19% {{ clp(totalFinal - neto) }}</span>
           </div>
@@ -192,6 +198,8 @@ export class VentraPosComponent implements OnInit, OnDestroy {
   lastSale?: Sale;
   discount = 0;
   tendered?: number;
+  /** Estimación en vivo de ofertas aplicables al carrito (POST /promotions/quote). */
+  promoQuote: PromoQuote | null = null;
   quickBills = [1000, 2000, 5000, 10000, 20000];
   parked: { name: string; lines: CartLine[] }[] = [];
   private busSub?: Subscription;
@@ -230,8 +238,20 @@ export class VentraPosComponent implements OnInit, OnDestroy {
   get total() {
     return this.cart.reduce((s, l) => s + l.quantity * Number(l.product.price), 0);
   }
+  get promoDiscount() {
+    return this.promoQuote?.promoDiscount ?? 0;
+  }
+  get promoNames() {
+    return (this.promoQuote?.detail ?? [])
+      .map((d) => `${d.promoName}: −${this.clp(d.discount)}`)
+      .join('\n');
+  }
+  /** Total visual = bruto − descuento manual − ofertas (clamp a 0). */
   get totalFinal() {
-    return Math.max(this.total - Math.max(Number(this.discount) || 0, 0), 0);
+    return Math.max(
+      this.total - Math.max(Number(this.discount) || 0, 0) - this.promoDiscount,
+      0,
+    );
   }
   get neto() {
     return Math.round(this.totalFinal / 1.19);
@@ -260,6 +280,7 @@ export class VentraPosComponent implements OnInit, OnDestroy {
     this.cart = [];
     this.discount = 0;
     this.tendered = undefined;
+    this.promoQuote = null;
     this.saveParked();
     this.scanInput?.nativeElement.focus();
   }
@@ -269,6 +290,7 @@ export class VentraPosComponent implements OnInit, OnDestroy {
     const [t] = this.parked.splice(i, 1);
     this.cart = t.lines;
     this.saveParked();
+    this.refreshQuote();
   }
 
   private saveParked() {
@@ -297,6 +319,21 @@ export class VentraPosComponent implements OnInit, OnDestroy {
     else this.cart.push({ product: p, quantity: 1 });
     this.error = '';
     this.lastSale = undefined;
+    this.refreshQuote();
+  }
+
+  /** Consulta las ofertas vigentes para el carrito actual (muestra el estimado en vivo). */
+  refreshQuote() {
+    if (!this.cart.length) {
+      this.promoQuote = null;
+      return;
+    }
+    this.api
+      .quote(this.cart.map((l) => ({ productId: l.product.id, quantity: l.quantity })))
+      .subscribe({
+        next: (q) => (this.promoQuote = q),
+        error: () => (this.promoQuote = null),
+      });
   }
 
   addByCode() {
@@ -325,6 +362,7 @@ export class VentraPosComponent implements OnInit, OnDestroy {
 
   cleanZero() {
     this.cart = this.cart.filter((l) => l.quantity > 0);
+    this.refreshQuote();
   }
 
   waBoleta(): string {
@@ -338,6 +376,10 @@ export class VentraPosComponent implements OnInit, OnDestroy {
   checkout() {
     this.saving = true;
     this.error = '';
+    // IMPORTANTE: se envía SOLO el descuento manual. El backend recalcula y suma
+    // por su cuenta el descuento automático por ofertas (computeDiscounts), así
+    // no se duplica. El quote del POS es solo el estimado visual: totalFinal
+    // (total − manual − ofertas) coincide con el total que calcula el backend.
     this.api
       .createSale(
         this.cart.map((l) => ({ productId: l.product.id, quantity: l.quantity })),
@@ -351,6 +393,7 @@ export class VentraPosComponent implements OnInit, OnDestroy {
           this.cart = [];
           this.discount = 0;
           this.tendered = undefined;
+          this.promoQuote = null;
           this.saving = false;
           this.loadCatalog(); // refresca stock en la grilla
           this.scanInput?.nativeElement.focus();

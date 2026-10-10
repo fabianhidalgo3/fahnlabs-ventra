@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ApiService, whatsappUrl } from '../../core/api.service';
@@ -66,19 +66,64 @@ interface ChatMsg {
             Reabrir en WhatsApp
           </a>
         }
+
+        <div class="mt-6 border-t border-gray-100 pt-5 dark:border-gray-800">
+          <h3 class="mb-2 text-lg font-semibold text-gray-800 dark:text-white/90">🤖 Bot de WhatsApp</h3>
+          @switch (wa?.status) {
+            @case ('CONECTADO') {
+              <p class="text-sm text-success-600">✓ Conectado{{ wa?.numero ? ' (+' + wa?.numero + ')' : '' }}</p>
+              <p class="mt-1 text-sm text-gray-500">Escríbele al chat <strong>"Tú" (mensaje a ti mismo)</strong> en WhatsApp y el asistente te responde con los datos del negocio.</p>
+            }
+            @case ('ESPERANDO_QR') {
+              <p class="mb-2 text-sm text-gray-500">Vincula tu WhatsApp: en el teléfono abre <strong>WhatsApp → Dispositivos vinculados → Vincular dispositivo</strong> y escanea:</p>
+              @if (wa?.qrDataUrl) {
+                <img [src]="wa?.qrDataUrl" alt="QR WhatsApp" class="mx-auto h-56 w-56 rounded-lg border border-gray-200 bg-white p-2 dark:border-gray-700" />
+              }
+            }
+            @case ('ERROR') {
+              <p class="text-sm text-error-600">Error: {{ wa?.lastError }}</p>
+            }
+            @default {
+              <p class="text-sm text-gray-400">{{ wa?.status ?? 'Consultando…' }}</p>
+            }
+          }
+          <button (click)="waRestart()" class="mt-3 rounded-lg border border-gray-300 px-3 py-1.5 text-xs text-gray-600 dark:border-gray-700 dark:text-gray-300">Reiniciar conexión</button>
+        </div>
       </div>
     </div>
   `,
 })
-export class VentraAsistenteComponent {
+export class VentraAsistenteComponent implements OnInit, OnDestroy {
   messages: ChatMsg[] = [];
   question = '';
   thinking = false;
   error = '';
   briefing = false;
   briefText = '';
+  wa?: { status: string; qrDataUrl: string | null; numero: string | null; lastError: string | null };
+  private waTimer?: ReturnType<typeof setInterval>;
 
   constructor(private api: ApiService) {}
+
+  ngOnInit() {
+    this.pollWa();
+    this.waTimer = setInterval(() => this.pollWa(), 5000);
+  }
+
+  ngOnDestroy() {
+    if (this.waTimer) clearInterval(this.waTimer);
+  }
+
+  pollWa() {
+    this.api.whatsappStatus().subscribe({
+      next: (s) => (this.wa = s),
+      error: () => undefined,
+    });
+  }
+
+  waRestart() {
+    this.api.whatsappRestart().subscribe(() => this.pollWa());
+  }
 
   waUrl(text: string) {
     return whatsappUrl(text);

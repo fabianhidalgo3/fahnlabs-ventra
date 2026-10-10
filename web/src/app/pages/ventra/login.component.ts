@@ -12,7 +12,8 @@ import { AuthService } from '../../core/auth.service';
     <div class="flex min-h-screen items-center justify-center bg-gray-50 dark:bg-gray-900 px-4">
       <div class="w-full max-w-md rounded-2xl border border-gray-200 bg-white p-8 shadow-sm dark:border-gray-800 dark:bg-white/[0.03]">
         <div class="mb-8 text-center">
-          <h1 class="text-3xl font-bold text-gray-800 dark:text-white/90">Ventra<span class="text-brand-500">.</span></h1>
+          <img src="/images/logo-ventra.svg" alt="Ventra" class="mx-auto h-12 dark:hidden" />
+          <img src="/images/logo-ventra-blanco.svg" alt="Ventra" class="mx-auto h-12 hidden dark:block" />
           <p class="mt-1 text-sm text-gray-500">by FHAN Labs — inicia sesión para continuar</p>
         </div>
 

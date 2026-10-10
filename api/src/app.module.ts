@@ -10,6 +10,8 @@ import { InventoryModule } from './inventory/inventory.module';
 import { PurchaseDocsModule } from './purchase-docs/purchase-docs.module';
 import { AssistantModule } from './assistant/assistant.module';
 import { CashModule } from './cash/cash.module';
+import { WhatsappModule } from './whatsapp/whatsapp.module';
+import { PromotionsModule } from './promotions/promotions.module';
 
 @Module({
   imports: [
@@ -24,6 +26,8 @@ import { CashModule } from './cash/cash.module';
     PurchaseDocsModule,
     AssistantModule,
     CashModule,
+    WhatsappModule,
+    PromotionsModule,
   ],
 })
 export class AppModule {}

@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 96" fill="none">
+  <!-- Logo Ventra: isotipo "V" ascendente + wordmark -->
+  <g transform="translate(16 14) scale(1.0625)">
+    <path d="M13 15 L30 50" stroke="#465FFF" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M30 50 L51 11" stroke="#465FFF" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+  <text x="100" y="67" font-family="Outfit, 'DM Sans', 'Segoe UI', sans-serif" font-size="56" font-weight="700" letter-spacing="-1" fill="#111827" textLength="240" lengthAdjust="spacingAndGlyphs">ventra</text>
+</svg>

@@ -5,6 +5,7 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { DteProvider } from './dte.provider';
+import { PromotionsService } from '../promotions/promotions.service';
 import { Payment } from '@prisma/client';
 
 export interface CreateSaleInput {
@@ -21,6 +22,7 @@ export class SalesService {
   constructor(
     private prisma: PrismaService,
     private dte: DteProvider,
+    private promotions: PromotionsService,
   ) {}
 
   async create(input: CreateSaleInput) {
@@ -30,6 +32,7 @@ export class SalesService {
     const sale = await this.prisma.$transaction(async (tx) => {
       const lines: {
         productId: string;
+        categoryId: string | null;
         name: string;
         quantity: number;
         unitPrice: number;
@@ -61,6 +64,7 @@ export class SalesService {
         const unitPrice = Number(product.price);
         lines.push({
           productId: product.id,
+          categoryId: product.categoryId,
           name: product.name,
           quantity: item.quantity,
           unitPrice,
@@ -70,7 +74,19 @@ export class SalesService {
 
       // Precios con IVA incluido (práctica chilena): neto = total / 1.19
       const bruto = lines.reduce((s, l) => s + l.total, 0);
-      const discount = Math.min(Math.max(Math.round(input.discount ?? 0), 0), bruto);
+      // Descuento automático por ofertas/promociones vigentes (la mejor por línea)
+      const promo = await this.promotions.computeDiscounts(
+        lines.map((l) => ({
+          productId: l.productId,
+          categoryId: l.categoryId,
+          quantity: l.quantity,
+          unitPrice: l.unitPrice,
+        })),
+      );
+      // Sale.discount guarda la suma: descuento manual + descuento por ofertas,
+      // con el clamp existente al bruto.
+      const manualDiscount = Math.max(Math.round(input.discount ?? 0), 0);
+      const discount = Math.min(manualDiscount + promo.totalDiscount, bruto);
       const total = bruto - discount;
       const neto = Math.round(total / 1.19);
       const iva = total - neto;

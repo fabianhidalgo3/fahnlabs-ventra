@@ -61,6 +61,31 @@ export interface Sale {
   boleta?: { folio: number; pdfPath?: string };
 }
 
+export type PromoType = 'PORCENTAJE' | 'PACK_PRECIO' | 'NXM';
+
+export interface Promotion {
+  id: string;
+  name: string;
+  type: PromoType;
+  percent?: number | null;
+  packQty?: number | null;
+  packPrice?: number | null;
+  nTake?: number | null;
+  mPay?: number | null;
+  categoryId?: string | null;
+  category?: { id: string; name: string } | null;
+  products?: { productId: string; product: { id: string; name: string } }[];
+  active: boolean;
+  startsAt?: string | null;
+  endsAt?: string | null;
+}
+
+export interface PromoQuote {
+  bruto: number;
+  promoDiscount: number;
+  detail: { productId: string; promoName: string; discount: number }[];
+}
+
 export interface Summary {
   from: string;
   to: string;
@@ -155,6 +180,20 @@ export class ApiService {
     return this.http.post<Sale>(`${API_URL}/sales/${id}/void`, {});
   }
 
+  // Ofertas / promociones
+  promotions() {
+    return this.http.get<Promotion[]>(`${API_URL}/promotions`);
+  }
+  createPromotion(data: Partial<Promotion> & { productIds?: string[] }) {
+    return this.http.post<Promotion>(`${API_URL}/promotions`, data);
+  }
+  updatePromotion(id: string, data: Partial<Promotion> & { productIds?: string[] }) {
+    return this.http.patch<Promotion>(`${API_URL}/promotions/${id}`, data);
+  }
+  quote(items: { productId: string; quantity: number }[]) {
+    return this.http.post<PromoQuote>(`${API_URL}/promotions/quote`, { items });
+  }
+
   // Caja
   cashCurrent() {
     return this.http.get<CashSummary>(`${API_URL}/cash/current`);
@@ -197,6 +236,17 @@ export class ApiService {
   }
   dailyBrief() {
     return this.http.get<{ text: string }>(`${API_URL}/assistant/daily-brief`);
+  }
+  whatsappStatus() {
+    return this.http.get<{
+      status: string;
+      qrDataUrl: string | null;
+      numero: string | null;
+      lastError: string | null;
+    }>(`${API_URL}/whatsapp/status`);
+  }
+  whatsappRestart() {
+    return this.http.post(`${API_URL}/whatsapp/restart`, {});
   }
 }
 
