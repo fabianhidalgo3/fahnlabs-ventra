@@ -47,7 +47,7 @@ export interface PurchaseDoc {
           <input [(ngModel)]="form.supplier" placeholder="Proveedor" class="h-11 rounded-lg border border-gray-300 bg-transparent px-3 text-sm dark:border-gray-700 dark:text-white/90" />
           <input [(ngModel)]="form.folio" placeholder="Folio / N° documento" class="h-11 rounded-lg border border-gray-300 bg-transparent px-3 text-sm dark:border-gray-700 dark:text-white/90" />
           <input [(ngModel)]="form.docDate" type="date" class="h-11 rounded-lg border border-gray-300 bg-transparent px-3 text-sm dark:border-gray-700 dark:text-white/90" />
-          <input [(ngModel)]="form.amount" type="number" placeholder="Monto total $" class="h-11 rounded-lg border border-gray-300 bg-transparent px-3 text-sm dark:border-gray-700 dark:text-white/90" />
+          <input [(ngModel)]="form.amount" type="number" placeholder="Monto total CLP (entero)" inputmode="numeric" min="0" step="1" class="h-11 rounded-lg border border-gray-300 bg-transparent px-3 text-sm dark:border-gray-700 dark:text-white/90" />
           <input [(ngModel)]="form.note" placeholder="Nota (opcional)" class="h-11 rounded-lg border border-gray-300 bg-transparent px-3 text-sm dark:border-gray-700 dark:text-white/90" />
           <div class="md:col-span-3">
             <label class="mb-1 block text-sm text-gray-500">Foto del documento * (desde el teléfono se abre la cámara)</label>
@@ -132,6 +132,12 @@ export class VentraDocumentosComponent implements OnInit {
       this.error = 'La foto del documento es obligatoria';
       return;
     }
+    const amount = Number(this.form.amount);
+    if (this.form.amount != null && String(this.form.amount) !== '' && (isNaN(amount) || amount < 0)) {
+      this.error = 'El monto debe ser un número en pesos, mayor o igual a 0';
+      return;
+    }
+    if (this.form.amount != null) this.form.amount = Math.round(amount);
     this.saving = true;
     this.error = '';
     const fd = new FormData();

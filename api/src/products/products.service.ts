@@ -79,7 +79,14 @@ export class ProductsService {
     const sku = dto.sku ?? 'SKU-' + randomUUID().slice(0, 8).toUpperCase();
     const barcode = dto.barcode ?? this.genBarcode();
     return this.prisma.product.create({
-      data: { ...dto, sku, barcode },
+      // CLP: montos enteros, sin decimales
+      data: {
+        ...dto,
+        price: Math.round(dto.price),
+        cost: dto.cost != null ? Math.round(dto.cost) : undefined,
+        sku,
+        barcode,
+      },
     });
   }
 
@@ -87,7 +94,11 @@ export class ProductsService {
     const prev = await this.get(id);
     const updated = await this.prisma.product.update({
       where: { id },
-      data: dto,
+      data: {
+        ...dto,
+        price: dto.price != null ? Math.round(dto.price) : undefined,
+        cost: dto.cost != null ? Math.round(dto.cost) : undefined,
+      },
     });
     if (dto.price !== undefined && Number(prev.price) !== dto.price) {
       await this.prisma.priceLog.create({

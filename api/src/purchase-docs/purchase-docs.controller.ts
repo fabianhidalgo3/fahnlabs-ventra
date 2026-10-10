@@ -101,7 +101,7 @@ export class PurchaseDocsController {
         supplier: body.supplier?.trim() || null,
         folio: body.folio?.trim() || null,
         docDate: body.docDate ? new Date(body.docDate) : null,
-        amount: body.amount && !isNaN(Number(body.amount)) ? Number(body.amount) : null,
+        amount: body.amount && !isNaN(Number(body.amount)) ? Math.round(Number(body.amount)) : null,
         note: body.note?.trim() || null,
         imageUrl: `/uploads/docs/${filename}`,
       },

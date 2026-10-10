@@ -48,7 +48,14 @@ export class VentraLoginComponent {
   ) {}
 
   submit() {
-    if (!this.email || !this.password) return;
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(this.email)) {
+      this.error = 'Ingresa un email válido (nombre@dominio.cl)';
+      return;
+    }
+    if (!this.password) {
+      this.error = 'Ingresa tu contraseña';
+      return;
+    }
     this.loading = true;
     this.error = '';
     this.auth.login(this.email, this.password).subscribe({

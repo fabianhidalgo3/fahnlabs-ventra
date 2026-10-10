@@ -103,7 +103,7 @@ interface CartLine {
                 <button (click)="setDiscountPct(pct)"
                   class="rounded-lg border border-gray-300 px-2 py-1 text-xs text-gray-500 dark:border-gray-700 dark:text-gray-400">{{ pct }}%</button>
               }
-              <input type="number" [(ngModel)]="discount" min="0" placeholder="$"
+              <input type="number" [(ngModel)]="discount" (ngModelChange)="clampDiscount()" min="0" step="1" inputmode="numeric" placeholder="$"
                 class="h-9 w-24 rounded-lg border border-gray-300 bg-transparent px-2 text-right text-sm dark:border-gray-700 dark:text-white/90" />
             </div>
           </div>
@@ -131,7 +131,7 @@ interface CartLine {
             <div class="mt-3 rounded-xl bg-gray-50 p-3 dark:bg-gray-800/60">
               <div class="flex items-center justify-between gap-2">
                 <span class="text-sm font-medium text-gray-600 dark:text-gray-300">Paga con</span>
-                <input type="number" [(ngModel)]="tendered" min="0" [placeholder]="clp(totalFinal)"
+                <input type="number" [(ngModel)]="tendered" min="0" step="1" inputmode="numeric" [placeholder]="clp(totalFinal)"
                   class="h-10 w-32 rounded-lg border border-gray-300 bg-white px-2 text-right text-base font-semibold dark:border-gray-700 dark:bg-gray-900 dark:text-white/90" />
               </div>
               <div class="mt-2 flex flex-wrap gap-1.5">
@@ -243,6 +243,12 @@ export class VentraPosComponent implements OnInit, OnDestroy {
 
   setDiscountPct(pct: number) {
     this.discount = Math.round((this.total * pct) / 100);
+  }
+
+  /** El descuento es CLP entero y nunca mayor al total de la venta. */
+  clampDiscount() {
+    const d = Math.round(Number(this.discount) || 0);
+    this.discount = Math.min(Math.max(d, 0), this.total);
   }
 
   park() {

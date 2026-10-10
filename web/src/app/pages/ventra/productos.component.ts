@@ -48,10 +48,30 @@ import { AuthService } from '../../core/auth.service';
       <div class="mb-4 rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03]">
         <h4 class="mb-3 font-semibold text-gray-800 dark:text-white/90">{{ editing ? 'Editar' : 'Nuevo' }} producto</h4>
         <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
-          <input [(ngModel)]="form.name" placeholder="Nombre *" class="h-11 rounded-lg border border-gray-300 bg-transparent px-3 text-sm dark:border-gray-700 dark:text-white/90" />
-          <input type="number" [(ngModel)]="form.price" placeholder="Precio *" class="h-11 rounded-lg border border-gray-300 bg-transparent px-3 text-sm dark:border-gray-700 dark:text-white/90" />
-          <input type="number" [(ngModel)]="form.stock" placeholder="Stock" class="h-11 rounded-lg border border-gray-300 bg-transparent px-3 text-sm dark:border-gray-700 dark:text-white/90" />
-          <input [(ngModel)]="form.barcode" placeholder="Código de barras (vacío = autogenerar)" class="h-11 rounded-lg border border-gray-300 bg-transparent px-3 text-sm dark:border-gray-700 dark:text-white/90" />
+          <div>
+            <input [(ngModel)]="form.name" placeholder="Nombre *" required
+              class="h-11 w-full rounded-lg border bg-transparent px-3 text-sm dark:text-white/90"
+              [class]="errores['name'] ? 'border-error-400' : 'border-gray-300 dark:border-gray-700'" />
+            @if (errores['name']) { <p class="mt-1 text-xs text-error-500">{{ errores['name'] }}</p> }
+          </div>
+          <div>
+            <input type="number" [(ngModel)]="form.price" placeholder="Precio CLP * (entero)" inputmode="numeric" min="1" step="1" required
+              class="h-11 w-full rounded-lg border bg-transparent px-3 text-sm dark:text-white/90"
+              [class]="errores['price'] ? 'border-error-400' : 'border-gray-300 dark:border-gray-700'" />
+            @if (errores['price']) { <p class="mt-1 text-xs text-error-500">{{ errores['price'] }}</p> }
+          </div>
+          <div>
+            <input type="number" [(ngModel)]="form.stock" placeholder="Stock (entero)" inputmode="numeric" min="0" step="1"
+              class="h-11 w-full rounded-lg border bg-transparent px-3 text-sm dark:text-white/90"
+              [class]="errores['stock'] ? 'border-error-400' : 'border-gray-300 dark:border-gray-700'" />
+            @if (errores['stock']) { <p class="mt-1 text-xs text-error-500">{{ errores['stock'] }}</p> }
+          </div>
+          <div>
+            <input [(ngModel)]="form.barcode" placeholder="Código de barras (vacío = autogenerar)" inputmode="numeric"
+              class="h-11 w-full rounded-lg border bg-transparent px-3 text-sm dark:text-white/90"
+              [class]="errores['barcode'] ? 'border-error-400' : 'border-gray-300 dark:border-gray-700'" />
+            @if (errores['barcode']) { <p class="mt-1 text-xs text-error-500">{{ errores['barcode'] }}</p> }
+          </div>
           <select [(ngModel)]="form.categoryId" class="h-11 rounded-lg border border-gray-300 bg-transparent px-3 text-sm dark:border-gray-700 dark:text-white/90 dark:bg-gray-900">
             <option value="">Sin categoría</option>
             @for (c of cats; track c.id) { <option [value]="c.id">{{ c.name }}</option> }
@@ -60,7 +80,7 @@ import { AuthService } from '../../core/auth.service';
             class="block text-sm text-gray-500 file:mr-3 file:rounded-lg file:border-0 file:bg-gray-200 file:px-4 file:py-2.5 dark:file:bg-gray-700 dark:file:text-gray-200" />
         </div>
         <div class="mt-4 flex gap-2">
-          <button (click)="save()" class="rounded-lg bg-brand-500 px-4 py-2.5 text-sm text-white">Guardar</button>
+          <button (click)="save()" [disabled]="!formValido" class="rounded-lg bg-brand-500 px-4 py-2.5 text-sm text-white disabled:opacity-40">Guardar</button>
           <button (click)="showForm = false" class="rounded-lg border border-gray-300 px-4 py-2.5 text-sm dark:border-gray-700 dark:text-gray-300">Cancelar</button>
         </div>
       </div>
@@ -173,6 +193,32 @@ export class VentraProductosComponent implements OnInit {
     this.api.categories().subscribe((c) => (this.cats = c));
   }
 
+  /** Validación CLP: precios enteros ≥ 1, stock entero ≥ 0, código numérico 8-14 dígitos. */
+  get errores(): Record<string, string> {
+    const e: Record<string, string> = {};
+    if (this.form.name !== undefined && (this.form.name?.trim().length ?? 0) < 2)
+      e['name'] = 'Mínimo 2 caracteres';
+    const price = Number(this.form.price);
+    if (this.form.price !== undefined && this.form.price !== null) {
+      if (isNaN(price) || price < 1) e['price'] = 'Precio en pesos, mínimo $1';
+      else if (!Number.isInteger(price)) e['price'] = 'CLP no usa decimales: entero';
+    }
+    const stock = Number(this.form.stock);
+    if (this.form.stock != null && (isNaN(stock) || stock < 0 || !Number.isInteger(stock)))
+      e['stock'] = 'Entero igual o mayor a 0';
+    if (!this.editing && this.form.barcode && !/^\d{8,14}$/.test(this.form.barcode))
+      e['barcode'] = 'Solo números (8 a 14 dígitos)';
+    return e;
+  }
+
+  get formValido(): boolean {
+    return (
+      (this.form.name?.trim().length ?? 0) >= 2 &&
+      Number(this.form.price) >= 1 &&
+      Object.keys(this.errores).length === 0
+    );
+  }
+
   copy(p: Product, field: 'sku' | 'barcode') {
     navigator.clipboard.writeText(field === 'sku' ? p.sku : p.barcode);
     this.copied = p.id + field;
@@ -191,11 +237,11 @@ export class VentraProductosComponent implements OnInit {
   }
 
   save() {
-    if (!this.form.name || !this.form.price) return;
+    if (!this.formValido) return;
     const data: Partial<Product> = {
-      name: this.form.name,
-      price: Number(this.form.price),
-      stock: Number(this.form.stock ?? 0),
+      name: this.form.name!.trim(),
+      price: Math.round(Number(this.form.price)),
+      stock: Math.round(Number(this.form.stock ?? 0)),
       categoryId: this.form.categoryId || undefined,
     };
     const afterSave = (p: Product) => {

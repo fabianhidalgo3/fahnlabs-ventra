@@ -18,10 +18,11 @@ import { ApiService, CashSummary, CashSession } from '../../core/api.service';
             <div class="flex items-end gap-3">
               <div>
                 <label class="mb-1 block text-sm text-gray-500">Fondo inicial $</label>
-                <input type="number" [(ngModel)]="openingCash" min="0" placeholder="20000"
-                  class="h-12 w-44 rounded-lg border border-gray-300 bg-transparent px-3 text-lg font-semibold dark:border-gray-700 dark:text-white/90" />
+                <input type="number" [(ngModel)]="openingCash" min="0" step="1" inputmode="numeric" placeholder="Ej: 20000"
+                  class="h-12 w-44 rounded-lg border bg-transparent px-3 text-lg font-semibold dark:text-white/90"
+                  [class]="montoInvalido(openingCash) ? 'border-error-400' : 'border-gray-300 dark:border-gray-700'" />
               </div>
-              <button (click)="open()" [disabled]="openingCash == null"
+              <button (click)="open()" [disabled]="openingCash == null || montoInvalido(openingCash)"
                 class="h-12 rounded-lg bg-brand-500 px-6 font-medium text-white hover:bg-brand-600 disabled:opacity-40">Abrir turno</button>
             </div>
             @if (error) { <p class="mt-3 text-sm text-error-600">{{ error }}</p> }
@@ -76,12 +77,13 @@ import { ApiService, CashSummary, CashSession } from '../../core/api.service';
               <div class="flex flex-wrap items-end gap-3">
                 <div>
                   <label class="mb-1 block text-sm text-gray-500">Efectivo contado $</label>
-                  <input type="number" [(ngModel)]="countedCash" min="0"
-                    class="h-12 w-44 rounded-lg border border-gray-300 bg-transparent px-3 text-lg font-semibold dark:border-gray-700 dark:text-white/90" />
+                  <input type="number" [(ngModel)]="countedCash" min="0" step="1" inputmode="numeric" placeholder="Cuenta el cajón"
+                    class="h-12 w-44 rounded-lg border bg-transparent px-3 text-lg font-semibold dark:text-white/90"
+                    [class]="montoInvalido(countedCash) ? 'border-error-400' : 'border-gray-300 dark:border-gray-700'" />
                 </div>
-                <input [(ngModel)]="note" placeholder="Nota (opcional)"
+                <input [(ngModel)]="note" placeholder="Nota (opcional)" maxlength="200"
                   class="h-12 flex-1 min-w-40 rounded-lg border border-gray-300 bg-transparent px-3 text-sm dark:border-gray-700 dark:text-white/90" />
-                <button (click)="close()" [disabled]="countedCash == null"
+                <button (click)="close()" [disabled]="countedCash == null || montoInvalido(countedCash)"
                   class="h-12 rounded-lg bg-error-500 px-6 font-medium text-white hover:bg-error-600 disabled:opacity-40">Cerrar turno</button>
               </div>
               @if (countedCash != null) {
@@ -106,8 +108,8 @@ import { ApiService, CashSummary, CashSession } from '../../core/api.service';
               <div class="rounded-xl border border-gray-100 p-3 text-sm dark:border-gray-800">
                 <div class="flex justify-between">
                   <span class="font-medium text-gray-800 dark:text-white/90">{{ h.openedAt | date: 'dd/MM/yyyy' }}</span>
-                  <span class="font-bold" [class]="(h.difference ?? 0) === 0 ? 'text-success-600' : 'text-error-600'">
-                    {{ (h.difference ?? 0) === 0 ? 'Cuadrada ✓' : 'Dif. ' + clp(h.difference ?? 0) }}
+                  <span class="font-bold" [class]="dif(h) === 0 ? 'text-success-600' : 'text-error-600'">
+                    {{ dif(h) === 0 ? 'Cuadrada ✓' : 'Dif. ' + clp(dif(h)) }}
                   </span>
                 </div>
                 <p class="text-xs text-gray-500">
@@ -136,6 +138,18 @@ export class VentraCajaComponent implements OnInit {
 
   clp(n: number) {
     return '$' + Math.round(Number(n)).toLocaleString('es-CL');
+  }
+
+  /** Prisma serializa Decimal como string: normalizar antes de comparar. */
+  dif(h: CashSession): number {
+    return Number(h.difference ?? 0);
+  }
+
+  /** CLP: entero ≥ 0; marca inválido lo demás. */
+  montoInvalido(v?: number): boolean {
+    if (v == null || String(v) === '') return false;
+    const n = Number(v);
+    return isNaN(n) || n < 0 || !Number.isInteger(n);
   }
 
   get efectivoTurno() {

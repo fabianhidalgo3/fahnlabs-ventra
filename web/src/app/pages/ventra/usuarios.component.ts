@@ -35,9 +35,14 @@ interface AppUser {
             <option value="ADMIN">Administrador</option>
           </select>
         </div>
+        @if (errores.length) {
+          <ul class="mt-3 list-inside list-disc text-xs text-error-500">
+            @for (e of errores; track e) { <li>{{ e }}</li> }
+          </ul>
+        }
         @if (error) { <p class="mt-3 text-sm text-error-600">{{ error }}</p> }
         <div class="mt-4 flex gap-2">
-          <button (click)="save()" class="rounded-lg bg-brand-500 px-4 py-2.5 text-sm text-white">Guardar</button>
+          <button (click)="save()" [disabled]="errores.length > 0" class="rounded-lg bg-brand-500 px-4 py-2.5 text-sm text-white disabled:opacity-40">Guardar</button>
           <button (click)="showForm = false" class="rounded-lg border border-gray-300 px-4 py-2.5 text-sm dark:border-gray-700 dark:text-gray-300">Cancelar</button>
         </div>
       </div>
@@ -110,7 +115,20 @@ export class VentraUsuariosComponent implements OnInit {
     this.showForm = true;
   }
 
+  get errores(): string[] {
+    const e: string[] = [];
+    if ((this.form.name?.trim().length ?? 0) < 2) e.push('Nombre: mínimo 2 caracteres');
+    if (!this.editing && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(this.form.email ?? ''))
+      e.push('Email con formato válido (nombre@dominio.cl)');
+    if (!this.editing && (this.form.password?.length ?? 0) < 6)
+      e.push('Contraseña: mínimo 6 caracteres');
+    if (this.editing && this.form.password && this.form.password.length < 6)
+      e.push('La nueva contraseña debe tener mínimo 6 caracteres');
+    return e;
+  }
+
   save() {
+    if (this.errores.length) return;
     this.error = '';
     const done = () => {
       this.showForm = false;
