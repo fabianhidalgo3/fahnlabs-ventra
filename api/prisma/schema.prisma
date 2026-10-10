@@ -81,12 +81,33 @@ model Sale {
   items      SaleItem[]
   subtotal   Decimal    @db.Decimal(12, 2)
   tax        Decimal    @db.Decimal(12, 2)
+  discount   Decimal    @default(0) @db.Decimal(12, 2)
   total      Decimal    @db.Decimal(12, 2)
   payment    Payment    @default(EFECTIVO)
+  tendered   Decimal?   @db.Decimal(12, 2)
+  change     Decimal?   @db.Decimal(12, 2)
+  voidedAt   DateTime?
   boleta     Boleta?
   createdAt  DateTime   @default(now())
 
   @@index([createdAt])
+}
+
+model CashSession {
+  id           String     @id @default(uuid())
+  openedAt     DateTime   @default(now())
+  closedAt     DateTime?
+  openingCash  Decimal    @db.Decimal(12, 2)
+  countedCash  Decimal?   @db.Decimal(12, 2)
+  expectedCash Decimal?   @db.Decimal(12, 2)
+  difference   Decimal?   @db.Decimal(12, 2)
+  note         String?
+  status       CashStatus @default(ABIERTA)
+}
+
+enum CashStatus {
+  ABIERTA
+  CERRADA
 }
 
 model SaleItem {

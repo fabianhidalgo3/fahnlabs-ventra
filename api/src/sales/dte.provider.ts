@@ -12,8 +12,11 @@ export interface BoletaData {
   items: { name: string; quantity: number; unitPrice: number; total: number }[];
   neto: number;
   iva: number;
+  discount: number;
   total: number;
   payment: string;
+  tendered?: number;
+  change?: number;
 }
 
 /**
@@ -68,10 +71,19 @@ export class DteSimuladoProvider extends DteProvider {
           },
           layout: 'lightHorizontalLines',
         },
-        { text: `Neto: ${clp(d.neto)}`, alignment: 'right', margin: [0, 6, 0, 0] },
+        ...(d.discount > 0
+          ? [{ text: `Descuento: -${clp(d.discount)}`, alignment: 'right', margin: [0, 6, 0, 0] }]
+          : []),
+        { text: `Neto: ${clp(d.neto)}`, alignment: 'right', margin: [0, d.discount > 0 ? 0 : 6, 0, 0] },
         { text: `IVA 19%: ${clp(d.iva)}`, alignment: 'right' },
         { text: `TOTAL: ${clp(d.total)}`, alignment: 'right', bold: true, fontSize: 10 },
         { text: `Pago: ${d.payment}`, alignment: 'right', margin: [0, 2] },
+        ...(d.tendered != null
+          ? [
+              { text: `Paga con: ${clp(d.tendered)}`, alignment: 'right' },
+              { text: `Vuelto: ${clp(d.change ?? 0)}`, alignment: 'right', bold: true },
+            ]
+          : []),
         {
           text: 'Timbre Electrónico SII — SIMULACIÓN (no válida tributariamente)',
           alignment: 'center',

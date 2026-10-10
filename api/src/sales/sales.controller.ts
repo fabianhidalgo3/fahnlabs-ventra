@@ -1,6 +1,7 @@
 import { Body, Controller, Get, Param, Post, Query } from '@nestjs/common';
 import { SalesService } from './sales.service';
 import type { CreateSaleInput } from './sales.service';
+import { Roles } from '../auth/auth.decorators';
 
 @Controller('sales')
 export class SalesController {
@@ -19,5 +20,11 @@ export class SalesController {
   @Get(':id')
   get(@Param('id') id: string) {
     return this.service.get(id);
+  }
+
+  @Roles('ADMIN')
+  @Post(':id/void')
+  void(@Param('id') id: string) {
+    return this.service.void(id);
   }
 }

@@ -45,8 +45,12 @@ export interface Sale {
   number: number;
   subtotal: number;
   tax: number;
+  discount: number;
   total: number;
   payment: string;
+  tendered?: number;
+  change?: number;
+  voidedAt?: string | null;
   createdAt: string;
   items: {
     quantity: number;
@@ -139,8 +143,30 @@ export class ApiService {
   }
 
   // Ventas
-  createSale(items: { barcode?: string; productId?: string; quantity: number }[], payment: string) {
-    return this.http.post<Sale>(`${API_URL}/sales`, { items, payment });
+  createSale(
+    items: { barcode?: string; productId?: string; quantity: number }[],
+    payment: string,
+    discount = 0,
+    tendered?: number,
+  ) {
+    return this.http.post<Sale>(`${API_URL}/sales`, { items, payment, discount, tendered });
+  }
+  voidSale(id: string) {
+    return this.http.post<Sale>(`${API_URL}/sales/${id}/void`, {});
+  }
+
+  // Caja
+  cashCurrent() {
+    return this.http.get<CashSummary>(`${API_URL}/cash/current`);
+  }
+  cashOpen(openingCash: number) {
+    return this.http.post<CashSession>(`${API_URL}/cash/open`, { openingCash });
+  }
+  cashClose(countedCash: number, note?: string) {
+    return this.http.post<CashSession>(`${API_URL}/cash/close`, { countedCash, note });
+  }
+  cashHistory() {
+    return this.http.get<CashSession[]>(`${API_URL}/cash/history`);
   }
   sales(from?: string, to?: string) {
     const params: Record<string, string> = {};
@@ -172,6 +198,26 @@ export class ApiService {
   dailyBrief() {
     return this.http.get<{ text: string }>(`${API_URL}/assistant/daily-brief`);
   }
+}
+
+export interface CashSession {
+  id: string;
+  openedAt: string;
+  closedAt?: string;
+  openingCash: number;
+  countedCash?: number;
+  expectedCash?: number;
+  difference?: number;
+  note?: string;
+  status: 'ABIERTA' | 'CERRADA';
+}
+
+export interface CashSummary {
+  session: CashSession | null;
+  byPayment?: Record<string, { ventas: number; total: number }>;
+  totalVentas?: number;
+  ventas?: number;
+  expectedCash?: number;
 }
 
 /** Abre WhatsApp con un mensaje listo para elegir contacto y enviar. */

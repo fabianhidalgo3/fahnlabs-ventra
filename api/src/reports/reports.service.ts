@@ -27,7 +27,7 @@ export class ReportsService {
              coalesce(sum(subtotal), 0)::float AS neto,
              coalesce(sum(tax), 0)::float AS iva
       FROM "Sale"
-      WHERE "createdAt" BETWEEN ${start} AND ${end}
+      WHERE "createdAt" BETWEEN ${start} AND ${end} AND "voidedAt" IS NULL
       GROUP BY bucket ORDER BY bucket`;
 
     const totals = rows.reduce(
@@ -47,7 +47,7 @@ export class ReportsService {
       FROM "SaleItem" si
       JOIN "Sale" s ON s.id = si."saleId"
       JOIN "Product" p ON p.id = si."productId"
-      WHERE s."createdAt" BETWEEN ${start} AND ${end}
+      WHERE s."createdAt" BETWEEN ${start} AND ${end} AND s."voidedAt" IS NULL
       GROUP BY p.name ORDER BY total DESC LIMIT 10`;
 
     return {
@@ -74,7 +74,7 @@ export class ReportsService {
   async exportXlsx(from?: string, to?: string): Promise<Buffer> {
     const { start, end } = this.range(from, to);
     const sales = await this.prisma.sale.findMany({
-      where: { createdAt: { gte: start, lte: end } },
+      where: { createdAt: { gte: start, lte: end }, voidedAt: null },
       include: { items: { include: { product: true } }, boleta: true },
       orderBy: { createdAt: 'asc' },
     });

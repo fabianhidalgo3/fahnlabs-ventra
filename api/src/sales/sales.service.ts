@@ -10,6 +10,10 @@ import { Payment } from '@prisma/client';
 export interface CreateSaleInput {
   items: { productId?: string; barcode?: string; quantity: number }[];
   payment?: Payment;
+  /** Descuento en pesos sobre el total de la venta. */
+  discount?: number;
+  /** Con cuánto paga el cliente (efectivo) para calcular vuelto. */
+  tendered?: number;
 }
 
 @Injectable()
@@ -65,15 +69,26 @@ export class SalesService {
       }
 
       // Precios con IVA incluido (práctica chilena): neto = total / 1.19
-      const total = lines.reduce((s, l) => s + l.total, 0);
+      const bruto = lines.reduce((s, l) => s + l.total, 0);
+      const discount = Math.min(Math.max(Math.round(input.discount ?? 0), 0), bruto);
+      const total = bruto - discount;
       const neto = Math.round(total / 1.19);
       const iva = total - neto;
+
+      const tendered =
+        input.tendered != null && input.tendered >= total
+          ? Math.round(input.tendered)
+          : null;
+      const change = tendered != null ? tendered - total : null;
 
       const created = await tx.sale.create({
         data: {
           subtotal: neto,
           tax: iva,
+          discount,
           total,
+          tendered,
+          change,
           payment: input.payment ?? 'EFECTIVO',
           items: {
             create: lines.map((l) => ({
@@ -87,7 +102,7 @@ export class SalesService {
         },
         include: { items: { include: { product: true } }, boleta: true },
       });
-      return { created, lines, neto, iva, total };
+      return { created, lines, neto, iva, discount, total, tendered, change };
     });
 
     // PDF fuera de la transacción (I/O lento no debe bloquear la BD)
@@ -98,8 +113,11 @@ export class SalesService {
       items: sale.lines,
       neto: sale.neto,
       iva: sale.iva,
+      discount: sale.discount,
       total: sale.total,
       payment: sale.created.payment,
+      tendered: sale.tendered ?? undefined,
+      change: sale.change ?? undefined,
     });
     const boleta = await this.prisma.boleta.update({
       where: { id: sale.created.boleta!.id },
@@ -130,5 +148,35 @@ export class SalesService {
     });
     if (!sale) throw new NotFoundException('Venta no encontrada');
     return sale;
+  }
+
+  /** Anula la venta: devuelve el stock y marca la boleta como ANULADA. */
+  async void(id: string) {
+    return this.prisma.$transaction(async (tx) => {
+      const sale = await tx.sale.findUnique({
+        where: { id },
+        include: { items: true, boleta: true },
+      });
+      if (!sale) throw new NotFoundException('Venta no encontrada');
+      if (sale.voidedAt) throw new BadRequestException('La venta ya está anulada');
+
+      for (const item of sale.items) {
+        await tx.product.update({
+          where: { id: item.productId },
+          data: { stock: { increment: item.quantity } },
+        });
+      }
+      if (sale.boleta) {
+        await tx.boleta.update({
+          where: { id: sale.boleta.id },
+          data: { status: 'ANULADA' },
+        });
+      }
+      return tx.sale.update({
+        where: { id },
+        data: { voidedAt: new Date() },
+        include: { items: { include: { product: true } }, boleta: true },
+      });
+    });
   }
 }

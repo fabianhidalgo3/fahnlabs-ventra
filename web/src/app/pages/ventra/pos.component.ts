@@ -60,7 +60,23 @@ interface CartLine {
 
       <!-- ===== Ticket (derecha) ===== -->
       <div class="xl:col-span-2 flex flex-col rounded-2xl border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-white/[0.03]">
-        <h3 class="mb-3 text-lg font-semibold text-gray-800 dark:text-white/90">🧾 Venta actual</h3>
+        <div class="mb-3 flex items-center justify-between">
+          <h3 class="text-lg font-semibold text-gray-800 dark:text-white/90">🧾 Venta actual</h3>
+          @if (cart.length) {
+            <button (click)="park()" class="rounded-lg border border-gray-300 px-3 py-1.5 text-xs font-medium text-gray-600 dark:border-gray-700 dark:text-gray-300">⏸ Suspender</button>
+          }
+        </div>
+
+        @if (parked.length) {
+          <div class="mb-2 flex flex-wrap gap-2">
+            @for (t of parked; track $index) {
+              <button (click)="resume($index)"
+                class="rounded-full bg-warning-50 px-3 py-1 text-xs font-medium text-warning-700 dark:bg-warning-500/15 dark:text-warning-400">
+                ▶ {{ t.name }} ({{ t.lines.length }})
+              </button>
+            }
+          </div>
+        }
 
         <div class="max-h-[34vh] flex-1 space-y-1 overflow-y-auto">
           @for (line of cart; track line.product.id) {
@@ -80,12 +96,23 @@ interface CartLine {
         </div>
 
         <div class="mt-3 border-t border-gray-100 pt-3 dark:border-gray-800">
-          <div class="flex justify-between text-xs text-gray-400">
-            <span>Neto {{ clp(neto) }}</span><span>IVA 19% {{ clp(total - neto) }}</span>
+          <div class="flex items-center justify-between gap-2">
+            <span class="text-sm text-gray-500">Descuento</span>
+            <div class="flex items-center gap-1.5">
+              @for (pct of [5, 10]; track pct) {
+                <button (click)="setDiscountPct(pct)"
+                  class="rounded-lg border border-gray-300 px-2 py-1 text-xs text-gray-500 dark:border-gray-700 dark:text-gray-400">{{ pct }}%</button>
+              }
+              <input type="number" [(ngModel)]="discount" min="0" placeholder="$"
+                class="h-9 w-24 rounded-lg border border-gray-300 bg-transparent px-2 text-right text-sm dark:border-gray-700 dark:text-white/90" />
+            </div>
+          </div>
+          <div class="mt-2 flex justify-between text-xs text-gray-400">
+            <span>Neto {{ clp(neto) }}</span><span>IVA 19% {{ clp(totalFinal - neto) }}</span>
           </div>
           <div class="mt-1 flex items-end justify-between">
             <span class="text-lg font-semibold text-gray-600 dark:text-gray-300">TOTAL</span>
-            <span class="text-4xl font-extrabold tracking-tight text-gray-800 dark:text-white">{{ clp(total) }}</span>
+            <span class="text-4xl font-extrabold tracking-tight text-gray-800 dark:text-white">{{ clp(totalFinal) }}</span>
           </div>
 
           <div class="mt-4 grid grid-cols-2 gap-2">
@@ -100,14 +127,39 @@ interface CartLine {
             }
           </div>
 
-          <button (click)="checkout()" [disabled]="!cart.length || saving"
+          @if (payment === 'EFECTIVO' && cart.length) {
+            <div class="mt-3 rounded-xl bg-gray-50 p-3 dark:bg-gray-800/60">
+              <div class="flex items-center justify-between gap-2">
+                <span class="text-sm font-medium text-gray-600 dark:text-gray-300">Paga con</span>
+                <input type="number" [(ngModel)]="tendered" min="0" [placeholder]="clp(totalFinal)"
+                  class="h-10 w-32 rounded-lg border border-gray-300 bg-white px-2 text-right text-base font-semibold dark:border-gray-700 dark:bg-gray-900 dark:text-white/90" />
+              </div>
+              <div class="mt-2 flex flex-wrap gap-1.5">
+                <button (click)="tendered = totalFinal" class="rounded-lg border border-gray-300 px-2.5 py-1 text-xs dark:border-gray-700 dark:text-gray-300">Justo</button>
+                @for (b of quickBills; track b) {
+                  <button (click)="tendered = b" class="rounded-lg border border-gray-300 px-2.5 py-1 text-xs dark:border-gray-700 dark:text-gray-300">{{ clp(b) }}</button>
+                }
+              </div>
+              @if (vuelto !== null) {
+                <div class="mt-2 flex items-center justify-between">
+                  <span class="text-sm font-medium text-gray-600 dark:text-gray-300">VUELTO</span>
+                  <span class="text-2xl font-extrabold" [class]="vuelto < 0 ? 'text-error-500' : 'text-success-600'">{{ clp(vuelto) }}</span>
+                </div>
+              }
+            </div>
+          }
+
+          <button (click)="checkout()" [disabled]="!cart.length || saving || (vuelto !== null && vuelto < 0)"
             class="mt-3 h-16 w-full rounded-xl bg-success-500 text-xl font-bold text-white transition hover:bg-success-600 active:scale-[0.99] disabled:opacity-40">
-            {{ saving ? 'Procesando…' : '💵 COBRAR ' + (cart.length ? clp(total) : '') }}
+            {{ saving ? 'Procesando…' : '💵 COBRAR ' + (cart.length ? clp(totalFinal) : '') }}
           </button>
 
           @if (lastSale) {
             <div class="mt-3 rounded-xl bg-success-50 p-4 dark:bg-success-500/15">
               <p class="font-semibold text-success-700 dark:text-success-400">✓ Venta N° {{ lastSale.number }} — boleta folio {{ lastSale.boleta?.folio }}</p>
+              @if (lastSale.change != null && lastSale.change > 0) {
+                <p class="mt-1 text-2xl font-extrabold text-success-700 dark:text-success-400">Vuelto: {{ clp(lastSale.change) }}</p>
+              }
               <div class="mt-2 grid grid-cols-2 gap-2 text-sm">
                 <a [href]="api.fileUrl(lastSale.boleta?.pdfPath)" target="_blank"
                   class="rounded-lg border border-success-500 py-2 text-center font-medium text-success-700 dark:text-success-400">Ver boleta</a>
@@ -138,6 +190,10 @@ export class VentraPosComponent implements OnInit, OnDestroy {
   error = '';
   saving = false;
   lastSale?: Sale;
+  discount = 0;
+  tendered?: number;
+  quickBills = [1000, 2000, 5000, 10000, 20000];
+  parked: { name: string; lines: CartLine[] }[] = [];
   private busSub?: Subscription;
   @ViewChild('scanInput') scanInput?: ElementRef<HTMLInputElement>;
 
@@ -150,6 +206,9 @@ export class VentraPosComponent implements OnInit, OnDestroy {
     this.loadCatalog();
     // Productos elegidos desde el buscador global del header
     this.busSub = this.posBus.add$.subscribe((p) => this.addProduct(p));
+    try {
+      this.parked = JSON.parse(localStorage.getItem('ventra_parked') ?? '[]');
+    } catch {}
   }
 
   ngOnDestroy() {
@@ -171,8 +230,45 @@ export class VentraPosComponent implements OnInit, OnDestroy {
   get total() {
     return this.cart.reduce((s, l) => s + l.quantity * Number(l.product.price), 0);
   }
+  get totalFinal() {
+    return Math.max(this.total - Math.max(Number(this.discount) || 0, 0), 0);
+  }
   get neto() {
-    return Math.round(this.total / 1.19);
+    return Math.round(this.totalFinal / 1.19);
+  }
+  get vuelto(): number | null {
+    if (this.payment !== 'EFECTIVO' || !this.tendered) return null;
+    return Math.round(Number(this.tendered)) - this.totalFinal;
+  }
+
+  setDiscountPct(pct: number) {
+    this.discount = Math.round((this.total * pct) / 100);
+  }
+
+  park() {
+    if (!this.cart.length) return;
+    this.parked.push({
+      name: `Ticket ${this.parked.length + 1} · ${new Date().toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' })}`,
+      lines: this.cart,
+    });
+    this.cart = [];
+    this.discount = 0;
+    this.tendered = undefined;
+    this.saveParked();
+    this.scanInput?.nativeElement.focus();
+  }
+
+  resume(i: number) {
+    if (this.cart.length) this.park();
+    const [t] = this.parked.splice(i, 1);
+    this.cart = t.lines;
+    this.saveParked();
+  }
+
+  private saveParked() {
+    try {
+      localStorage.setItem('ventra_parked', JSON.stringify(this.parked));
+    } catch {}
   }
 
   selectCat(id: string) {
@@ -240,11 +336,15 @@ export class VentraPosComponent implements OnInit, OnDestroy {
       .createSale(
         this.cart.map((l) => ({ productId: l.product.id, quantity: l.quantity })),
         this.payment,
+        Math.max(Number(this.discount) || 0, 0),
+        this.payment === 'EFECTIVO' && this.tendered ? Number(this.tendered) : undefined,
       )
       .subscribe({
         next: (s) => {
           this.lastSale = s;
           this.cart = [];
+          this.discount = 0;
+          this.tendered = undefined;
           this.saving = false;
           this.loadCatalog(); // refresca stock en la grilla
           this.scanInput?.nativeElement.focus();

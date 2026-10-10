@@ -16,12 +16,12 @@ export class AssistantService {
 
     const [ventasHoy, ventas7d, topSemana, stockBajo, porVencer] = await Promise.all([
       this.prisma.sale.aggregate({
-        where: { createdAt: { gte: hoy } },
+        where: { createdAt: { gte: hoy }, voidedAt: null },
         _count: true,
         _sum: { total: true },
       }),
       this.prisma.sale.aggregate({
-        where: { createdAt: { gte: hace7 } },
+        where: { createdAt: { gte: hace7 }, voidedAt: null },
         _count: true,
         _sum: { total: true },
       }),
@@ -30,7 +30,7 @@ export class AssistantService {
         FROM "SaleItem" si
         JOIN "Sale" s ON s.id = si."saleId"
         JOIN "Product" p ON p.id = si."productId"
-        WHERE s."createdAt" >= ${hace7}
+        WHERE s."createdAt" >= ${hace7} AND s."voidedAt" IS NULL
         GROUP BY p.name ORDER BY total DESC LIMIT 5`,
       this.prisma.product.findMany({
         where: { active: true },

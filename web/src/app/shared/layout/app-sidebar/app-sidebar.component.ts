@@ -45,6 +45,16 @@ export class AppSidebarComponent {
       path: "/pos",
     },
     {
+      icon: `<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" clip-rule="evenodd" d="M4 5C4 3.9 4.9 3 6 3H18C19.1 3 20 3.9 20 5V7H4V5ZM4 9H20V19C20 20.1 19.1 21 18 21H6C4.9 21 4 20.1 4 19V9ZM7 12V14H11V12H7ZM13 12V14H17V12H13ZM7 16V18H11V16H7ZM13 16V18H17V16H13Z" fill="currentColor"></path></svg>`,
+      name: "Ventas",
+      path: "/ventas",
+    },
+    {
+      icon: `<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" clip-rule="evenodd" d="M3 6C3 4.9 3.9 4 5 4H19C20.1 4 21 4.9 21 6V9H3V6ZM3 11H21V18C21 19.1 20.1 20 19 20H5C3.9 20 3 19.1 3 18V11ZM6 14V17H10V14H6ZM15.5 13C14.1 13 13 14.1 13 15.5C13 16.9 14.1 18 15.5 18C16.9 18 18 16.9 18 15.5C18 14.1 16.9 13 15.5 13Z" fill="currentColor"></path></svg>`,
+      name: "Caja",
+      path: "/caja",
+    },
+    {
       icon: `<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" clip-rule="evenodd" d="M12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12C22 6.48 17.52 2 12 2ZM12 20C7.59 20 4 16.41 4 12C4 7.59 7.59 4 12 4C16.41 4 20 7.59 20 12C20 16.41 16.41 20 12 20ZM12.5 7H11V13L16.2 16.1L17 14.9L12.5 12.2V7Z" fill="currentColor"></path></svg>`,
       name: "Vencimientos",
       path: "/vencimientos",
