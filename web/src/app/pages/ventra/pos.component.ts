@@ -211,8 +211,13 @@ interface CartLine {
               </div>
               @if (vuelto !== null) {
                 <div class="mt-2 flex items-center justify-between">
-                  <span class="text-sm font-medium text-gray-600 dark:text-gray-300">VUELTO</span>
-                  <span class="text-2xl font-extrabold" [class]="vuelto < 0 ? 'text-error-500' : 'text-success-600'">{{ clp(vuelto) }}</span>
+                  @if (vuelto >= 0) {
+                    <span class="text-sm font-medium text-gray-600 dark:text-gray-300">VUELTO</span>
+                    <span class="text-2xl font-extrabold text-success-600">{{ clp(vuelto) }}</span>
+                  } @else {
+                    <span class="text-sm font-medium text-error-500">FALTA POR PAGAR</span>
+                    <span class="text-2xl font-extrabold text-error-500">{{ clp(-vuelto) }}</span>
+                  }
                 </div>
               }
             </div>
@@ -302,7 +307,15 @@ export class VentraPosComponent implements OnInit, OnDestroy {
   tendered?: number;
   /** Estimación en vivo de ofertas aplicables al carrito (POST /promotions/quote). */
   promoQuote: PromoQuote | null = null;
-  quickBills = [1000, 2000, 5000, 10000, 20000];
+  /** Montos rápidos de pago según el total: redondeos hacia arriba típicos de caja. */
+  get quickBills(): number[] {
+    const t = this.totalFinal;
+    if (t <= 0) return [];
+    const candidatos = [1000, 2000, 5000, 10000, 20000, 50000, 100000]
+      .map((b) => Math.ceil(t / b) * b)
+      .filter((m) => m > t);
+    return [...new Set(candidatos)].sort((a, b) => a - b).slice(0, 4);
+  }
   parked: { name: string; lines: CartLine[] }[] = [];
   vista: 'grilla' | 'lista' = (localStorage.getItem('ventra_pos_vista') as 'grilla' | 'lista') || 'grilla';
   orden: 'nombre' | 'precio-asc' | 'precio-desc' = 'nombre';
