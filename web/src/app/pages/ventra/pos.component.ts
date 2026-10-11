@@ -121,7 +121,10 @@ interface CartLine {
         <div class="mb-3 flex items-center justify-between">
           <h3 class="text-lg font-semibold text-gray-800 dark:text-white/90">🧾 Venta actual</h3>
           @if (cart.length) {
-            <button (click)="park()" class="rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:hover:bg-gray-800">⏸ Suspender</button>
+            <div class="flex gap-1.5">
+              <button (click)="park()" class="rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:hover:bg-gray-800">⏸ Suspender</button>
+              <button (click)="cancelarVenta()" class="rounded-lg border border-error-300 px-3 py-1.5 text-xs font-medium text-error-600 hover:bg-error-50 dark:hover:bg-error-500/10">✕ Cancelar</button>
+            </div>
           }
         </div>
 
@@ -164,7 +167,10 @@ interface CartLine {
             <div class="flex items-center gap-1.5">
               @for (pct of [5, 10]; track pct) {
                 <button (click)="setDiscountPct(pct)"
-                  class="rounded-lg border border-gray-300 px-2 py-1 text-xs text-gray-500 dark:border-gray-700 dark:text-gray-400">{{ pct }}%</button>
+                  class="rounded-lg border px-2 py-1 text-xs font-medium transition-colors"
+                  [class]="descuentoPct === pct
+                    ? 'border-brand-500 bg-brand-500 text-white'
+                    : 'border-gray-300 text-gray-500 hover:border-brand-300 dark:border-gray-700 dark:text-gray-400'">{{ pct }}%</button>
               }
               <input clpMoneda type="text" [(ngModel)]="discount" (ngModelChange)="clampDiscount()" inputmode="numeric" placeholder="$"
                 class="h-9 w-24 rounded-lg border border-gray-300 bg-white px-2 text-right text-sm dark:border-gray-700 dark:bg-gray-900 dark:text-white/90" />
@@ -304,6 +310,7 @@ export class VentraPosComponent implements OnInit, OnDestroy {
   saving = false;
   lastSale?: Sale;
   discount = 0;
+  descuentoPct?: number;
   tendered?: number;
   /** Estimación en vivo de ofertas aplicables al carrito (POST /promotions/quote). */
   promoQuote: PromoQuote | null = null;
@@ -381,11 +388,40 @@ export class VentraPosComponent implements OnInit, OnDestroy {
   }
 
   setDiscountPct(pct: number) {
+    if (this.descuentoPct === pct) {
+      // segundo clic en el mismo %: se quita el descuento
+      this.descuentoPct = undefined;
+      this.discount = 0;
+      return;
+    }
+    this.descuentoPct = pct;
     this.discount = Math.round((this.total * pct) / 100);
+  }
+
+  /** Si hay un % activo, el monto se recalcula cuando cambia el carrito. */
+  private recalcDescuento() {
+    if (this.descuentoPct != null) {
+      this.discount = Math.round((this.total * this.descuentoPct) / 100);
+    }
+  }
+
+  /** Cancela la venta en curso: limpia carrito y estado sin registrar nada. */
+  cancelarVenta() {
+    if (!confirm('¿Cancelar la venta en curso? Se vacía el carrito sin registrar nada.')) return;
+    this.cart = [];
+    this.discount = 0;
+    this.descuentoPct = undefined;
+    this.tendered = undefined;
+    this.clienteFiado = undefined;
+    this.lastSale = undefined;
+    this.error = '';
+    this.refreshQuote();
+    this.scanInput?.nativeElement.focus();
   }
 
   /** El descuento es CLP entero y nunca mayor al total de la venta. */
   clampDiscount() {
+    this.descuentoPct = undefined;
     const d = Math.round(Number(this.discount) || 0);
     this.discount = Math.min(Math.max(d, 0), this.total);
   }
@@ -472,6 +508,7 @@ export class VentraPosComponent implements OnInit, OnDestroy {
     const existing = this.cart.find((l) => l.product.id === p.id);
     if (existing) existing.quantity++;
     else this.cart.push({ product: p, quantity: 1 });
+    this.recalcDescuento();
     this.error = '';
     this.lastSale = undefined;
     this.refreshQuote();
@@ -517,6 +554,7 @@ export class VentraPosComponent implements OnInit, OnDestroy {
 
   cleanZero() {
     this.cart = this.cart.filter((l) => l.quantity > 0);
+    this.recalcDescuento();
     this.refreshQuote();
   }
 
