@@ -11,6 +11,7 @@ import { PurchaseDocsModule } from './purchase-docs/purchase-docs.module';
 import { AssistantModule } from './assistant/assistant.module';
 import { CashModule } from './cash/cash.module';
 import { WhatsappModule } from './whatsapp/whatsapp.module';
+import { FiadoModule } from './fiado/fiado.module';
 import { PromotionsModule } from './promotions/promotions.module';
 
 @Module({
@@ -27,6 +28,7 @@ import { PromotionsModule } from './promotions/promotions.module';
     AssistantModule,
     CashModule,
     WhatsappModule,
+    FiadoModule,
     PromotionsModule,
   ],
 })

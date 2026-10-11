@@ -15,6 +15,8 @@ export interface CreateSaleInput {
   discount?: number;
   /** Con cuánto paga el cliente (efectivo) para calcular vuelto. */
   tendered?: number;
+  /** Cliente del fiado (obligatorio cuando payment === FIADO). */
+  customerId?: string;
 }
 
 @Injectable()
@@ -28,6 +30,8 @@ export class SalesService {
   async create(input: CreateSaleInput) {
     if (!input.items?.length)
       throw new BadRequestException('La venta necesita al menos un ítem');
+    if (input.payment === 'FIADO' && !input.customerId)
+      throw new BadRequestException('Una venta al fiado necesita un cliente');
 
     const sale = await this.prisma.$transaction(async (tx) => {
       const lines: {
@@ -106,6 +110,7 @@ export class SalesService {
           tendered,
           change,
           payment: input.payment ?? 'EFECTIVO',
+          customerId: input.payment === 'FIADO' ? input.customerId : undefined,
           items: {
             create: lines.map((l) => ({
               productId: l.productId,

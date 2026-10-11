@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ClpMonedaDirective } from '../../shared/directives/clp-moneda.directive';
 import { Subscription } from 'rxjs';
-import { ApiService, Product, Category, Sale, PromoQuote, whatsappUrl } from '../../core/api.service';
+import { ApiService, Product, Category, Sale, PromoQuote, FiadoCliente, whatsappUrl } from '../../core/api.service';
 import { PosBusService } from '../../core/pos-bus.service';
 
 interface CartLine {
@@ -186,7 +186,7 @@ interface CartLine {
 
           <div class="mt-4 grid grid-cols-2 gap-2">
             @for (pm of payments; track pm.value) {
-              <button (click)="payment = pm.value"
+              <button (click)="setPago(pm.value)"
                 class="rounded-xl border-2 py-2.5 text-sm font-semibold transition"
                 [class]="payment === pm.value
                   ? 'border-brand-500 bg-brand-50 text-brand-600 dark:bg-brand-500/15 dark:text-brand-400'
@@ -218,7 +218,41 @@ interface CartLine {
             </div>
           }
 
-          <button (click)="checkout()" [disabled]="!cart.length || saving || (vuelto !== null && vuelto < 0)"
+          @if (payment === 'FIADO' && cart.length) {
+            <div class="mt-3 rounded-xl bg-gray-50 p-3 dark:bg-gray-800/60">
+              <p class="mb-2 text-sm font-medium text-gray-600 dark:text-gray-300">📒 ¿Quién se lo lleva fiado?</p>
+              @if (clienteFiado) {
+                <div class="flex items-center justify-between rounded-lg border border-brand-300 bg-brand-50 px-3 py-2 dark:border-brand-500/40 dark:bg-brand-500/10">
+                  <span class="text-sm font-semibold text-brand-700 dark:text-brand-400">{{ clienteFiado.name }}
+                    <span class="font-normal text-gray-500">(debe {{ clp(clienteFiado.deuda) }})</span>
+                  </span>
+                  <button (click)="clienteFiado = undefined" class="text-xs text-gray-400 hover:text-error-500">cambiar ✕</button>
+                </div>
+              } @else {
+                <input [(ngModel)]="buscaCliente" placeholder="Buscar cliente…"
+                  class="mb-2 h-10 w-full rounded-lg border border-gray-300 bg-white px-3 text-sm dark:border-gray-700 dark:bg-gray-950 dark:text-white/90" />
+                <div class="max-h-36 space-y-1 overflow-y-auto">
+                  @for (c of clientesFiltrados(); track c.id) {
+                    <button (click)="clienteFiado = c"
+                      class="flex w-full items-center justify-between rounded-lg px-2.5 py-1.5 text-left text-sm hover:bg-white dark:hover:bg-gray-900">
+                      <span class="text-gray-800 dark:text-white/90">{{ c.name }}</span>
+                      <span class="text-xs" [class]="c.deuda > 0 ? 'text-error-500' : 'text-gray-400'">{{ clp(c.deuda) }}</span>
+                    </button>
+                  } @empty {
+                    <p class="px-2 py-1 text-xs text-gray-400">Sin resultados</p>
+                  }
+                </div>
+                <div class="mt-2 flex gap-2">
+                  <input [(ngModel)]="nuevoClienteNombre" placeholder="…o crea uno: nombre"
+                    class="h-9 flex-1 rounded-lg border border-gray-300 bg-white px-3 text-xs dark:border-gray-700 dark:bg-gray-950 dark:text-white/90" />
+                  <button (click)="crearClienteRapido()" [disabled]="!nuevoClienteNombre.trim()"
+                    class="h-9 rounded-lg bg-brand-500 px-3 text-xs font-medium text-white disabled:opacity-40">Crear</button>
+                </div>
+              }
+            </div>
+          }
+
+          <button (click)="checkout()" [disabled]="!cart.length || saving || (vuelto !== null && vuelto < 0) || (payment === 'FIADO' && !clienteFiado)"
             class="mt-3 h-16 w-full rounded-xl bg-success-500 text-xl font-bold text-white transition hover:bg-success-600 active:scale-[0.99] disabled:opacity-40">
             {{ saving ? 'Procesando…' : '💵 COBRAR ' + (cart.length ? clp(totalFinal) : '') }}
           </button>
@@ -255,7 +289,12 @@ export class VentraPosComponent implements OnInit, OnDestroy {
     { value: 'DEBITO', label: 'Débito', icon: '💳' },
     { value: 'CREDITO', label: 'Crédito', icon: '💳' },
     { value: 'TRANSFERENCIA', label: 'Transfer.', icon: '📱' },
+    { value: 'FIADO', label: 'Fiado', icon: '📒' },
   ];
+  clientesFiado: FiadoCliente[] = [];
+  clienteFiado?: FiadoCliente;
+  buscaCliente = '';
+  nuevoClienteNombre = '';
   error = '';
   saving = false;
   lastSale?: Sale;
@@ -366,6 +405,28 @@ export class VentraPosComponent implements OnInit, OnDestroy {
     } catch {}
   }
 
+  setPago(v: string) {
+    this.payment = v;
+    if (v === 'FIADO' && !this.clientesFiado.length) {
+      this.api.fiadoClientes().subscribe((c) => (this.clientesFiado = c));
+    }
+  }
+
+  clientesFiltrados(): FiadoCliente[] {
+    const q = this.buscaCliente.trim().toLowerCase();
+    return this.clientesFiado.filter((c) => !q || c.name.toLowerCase().includes(q)).slice(0, 6);
+  }
+
+  crearClienteRapido() {
+    const name = this.nuevoClienteNombre.trim();
+    if (!name) return;
+    this.api.fiadoCrearCliente({ name }).subscribe((c) => {
+      this.clientesFiado = [...this.clientesFiado, { ...c, fiado: 0, abonado: 0, deuda: 0 }];
+      this.clienteFiado = this.clientesFiado[this.clientesFiado.length - 1];
+      this.nuevoClienteNombre = '';
+    });
+  }
+
   setVista(v: 'grilla' | 'lista') {
     this.vista = v;
     try {
@@ -467,6 +528,7 @@ export class VentraPosComponent implements OnInit, OnDestroy {
         this.payment,
         Math.max(Number(this.discount) || 0, 0),
         this.payment === 'EFECTIVO' && this.tendered ? Number(this.tendered) : undefined,
+        this.payment === 'FIADO' ? this.clienteFiado?.id : undefined,
       )
       .subscribe({
         next: (s) => {

@@ -174,8 +174,9 @@ export class ApiService {
     payment: string,
     discount = 0,
     tendered?: number,
+    customerId?: string,
   ) {
-    return this.http.post<Sale>(`${API_URL}/sales`, { items, payment, discount, tendered });
+    return this.http.post<Sale>(`${API_URL}/sales`, { items, payment, discount, tendered, customerId });
   }
   voidSale(id: string) {
     return this.http.post<Sale>(`${API_URL}/sales/${id}/void`, {});
@@ -234,6 +235,20 @@ export class ApiService {
     return path ? `${FILES_URL}${path}` : '';
   }
 
+  // Fiado
+  fiadoClientes() {
+    return this.http.get<FiadoCliente[]>(`${API_URL}/fiado/clientes`);
+  }
+  fiadoCrearCliente(data: { name: string; phone?: string; note?: string }) {
+    return this.http.post<FiadoCliente>(`${API_URL}/fiado/clientes`, data);
+  }
+  fiadoDetalle(id: string) {
+    return this.http.get<FiadoDetalle>(`${API_URL}/fiado/clientes/${id}`);
+  }
+  fiadoAbonar(id: string, amount: number, note?: string) {
+    return this.http.post<FiadoDetalle>(`${API_URL}/fiado/clientes/${id}/abono`, { amount, note });
+  }
+
   // Asistente IA (Ollama local)
   ask(question: string) {
     return this.http.post<{ answer: string }>(`${API_URL}/assistant/ask`, { question });
@@ -252,6 +267,28 @@ export class ApiService {
   whatsappRestart() {
     return this.http.post(`${API_URL}/whatsapp/restart`, {});
   }
+}
+
+export interface FiadoCliente {
+  id: string;
+  name: string;
+  phone?: string | null;
+  note?: string | null;
+  fiado: number;
+  abonado: number;
+  deuda: number;
+}
+
+export interface FiadoMovimiento {
+  tipo: 'FIADO' | 'ABONO';
+  fecha: string;
+  monto: number;
+  detalle: string;
+  boletaPdf?: string | null;
+}
+
+export interface FiadoDetalle extends FiadoCliente {
+  movimientos: FiadoMovimiento[];
 }
 
 export interface CashSession {
