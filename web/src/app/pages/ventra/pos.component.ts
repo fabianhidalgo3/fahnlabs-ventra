@@ -118,6 +118,23 @@ interface CartLine {
 
       <!-- ===== Ticket (derecha) ===== -->
       <div class="order-1 xl:order-none xl:col-span-2 2xl:col-span-2 flex flex-col rounded-2xl border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-gray-900">
+        @if (cajaAbierta === false) {
+          <div class="mb-3 rounded-xl border-2 border-dashed border-warning-500/60 bg-warning-50 p-4 dark:bg-warning-500/10">
+            <p class="font-semibold text-warning-700 dark:text-warning-400">🔒 Caja cerrada</p>
+            <p class="mb-3 text-sm text-gray-600 dark:text-gray-300">Abre un turno para poder vender.</p>
+            <div class="flex flex-wrap items-end gap-2">
+              <div>
+                <label class="mb-1 block text-xs font-medium text-gray-500">Fondo inicial $</label>
+                <input clpMoneda type="text" inputmode="numeric" [(ngModel)]="fondoApertura" placeholder="Ej: 20.000"
+                  class="h-10 w-32 rounded-lg border border-gray-300 bg-white px-3 text-sm font-semibold dark:border-gray-700 dark:bg-gray-950 dark:text-white/90" />
+              </div>
+              <button (click)="abrirCajaRapida()" [disabled]="fondoApertura == null || abriendoCaja"
+                class="inline-flex h-10 items-center rounded-lg bg-brand-500 px-4 text-sm font-medium text-white hover:bg-brand-600 disabled:opacity-40">
+                {{ abriendoCaja ? 'Abriendo…' : 'Abrir caja' }}
+              </button>
+            </div>
+          </div>
+        }
         <div class="mb-3 flex items-center justify-between">
           <h3 class="text-lg font-semibold text-gray-800 dark:text-white/90">🧾 Venta actual</h3>
           @if (cart.length) {
@@ -263,7 +280,7 @@ interface CartLine {
             </div>
           }
 
-          <button (click)="checkout()" [disabled]="!cart.length || saving || (vuelto !== null && vuelto < 0) || (payment === 'FIADO' && !clienteFiado)"
+          <button (click)="checkout()" [disabled]="!cart.length || saving || cajaAbierta === false || (vuelto !== null && vuelto < 0) || (payment === 'FIADO' && !clienteFiado)"
             class="mt-3 h-16 w-full rounded-xl bg-success-500 text-xl font-bold text-white transition hover:bg-success-600 active:scale-[0.99] disabled:opacity-40">
             {{ saving ? 'Procesando…' : '💵 COBRAR ' + (cart.length ? clp(totalFinal) : '') }}
           </button>
@@ -309,6 +326,9 @@ export class VentraPosComponent implements OnInit, OnDestroy {
   error = '';
   saving = false;
   lastSale?: Sale;
+  cajaAbierta: boolean | null = null; // null = consultando
+  fondoApertura?: number;
+  abriendoCaja = false;
   discount = 0;
   descuentoPct?: number;
   tendered?: number;
@@ -337,6 +357,10 @@ export class VentraPosComponent implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit() {
+    this.api.cashCurrent().subscribe({
+      next: (c) => (this.cajaAbierta = !!c.session),
+      error: () => (this.cajaAbierta = true), // ante dudas no bloquear: la API decide igual
+    });
     this.loadCatalog();
     // Productos elegidos desde el buscador global del header
     this.busSub = this.posBus.add$.subscribe((p) => this.addProduct(p));
@@ -403,6 +427,22 @@ export class VentraPosComponent implements OnInit, OnDestroy {
     if (this.descuentoPct != null) {
       this.discount = Math.round((this.total * this.descuentoPct) / 100);
     }
+  }
+
+  abrirCajaRapida() {
+    if (this.fondoApertura == null || this.fondoApertura < 0) return;
+    this.abriendoCaja = true;
+    this.api.cashOpen(Number(this.fondoApertura)).subscribe({
+      next: () => {
+        this.cajaAbierta = true;
+        this.abriendoCaja = false;
+        this.scanInput?.nativeElement.focus();
+      },
+      error: (e) => {
+        this.abriendoCaja = false;
+        this.error = e?.error?.message ?? 'No se pudo abrir la caja';
+      },
+    });
   }
 
   /** Cancela la venta en curso: limpia carrito y estado sin registrar nada. */

@@ -33,6 +33,13 @@ export class SalesService {
     if (input.payment === 'FIADO' && !input.customerId)
       throw new BadRequestException('Una venta al fiado necesita un cliente');
 
+    // Regla de caja: no se puede vender sin un turno abierto
+    const cajaAbierta = await this.prisma.cashSession.findFirst({
+      where: { businessId: biz, status: 'ABIERTA' },
+    });
+    if (!cajaAbierta)
+      throw new BadRequestException('La caja está cerrada: abre un turno antes de vender');
+
     const sale = await this.prisma.$transaction(async (tx) => {
       const lines: {
         productId: string;
