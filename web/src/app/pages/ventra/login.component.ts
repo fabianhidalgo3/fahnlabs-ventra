@@ -13,8 +13,8 @@ import { AuthService } from '../../core/auth.service';
       <div class="pointer-events-none absolute left-1/2 top-1/2 h-[32rem] w-[32rem] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[radial-gradient(circle_at_center,#465fff,transparent_70%)] opacity-20 blur-3xl" aria-hidden="true"></div>
       <div class="relative w-full max-w-md rounded-2xl border border-gray-200 bg-white p-8 shadow-lg dark:border-gray-800 dark:bg-gray-900">
         <div class="mb-8 text-center">
-          <img src="/images/logo-ventra.svg" alt="Ventra" class="mx-auto h-16 dark:hidden" />
-          <img src="/images/logo-ventra-blanco.svg" alt="Ventra" class="mx-auto h-16 hidden dark:block" />
+          <img src="/images/logo-ventra.svg" alt="Ventra" class="mx-auto h-20 dark:hidden" />
+          <img src="/images/logo-ventra-blanco.svg" alt="Ventra" class="mx-auto h-20 hidden dark:block" />
           <p class="mt-1 text-sm text-gray-500">by FHAN Labs — inicia sesión para continuar</p>
         </div>
 

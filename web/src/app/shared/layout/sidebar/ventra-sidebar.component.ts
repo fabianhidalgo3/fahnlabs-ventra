@@ -19,11 +19,11 @@ import { NAV_LINKS, NavLink } from '../top-nav/nav-links';
       <div class="flex h-[73px] items-center border-b border-gray-200 dark:border-gray-800"
         [class]="colapsado() ? 'justify-center px-2' : 'px-5'">
         @if (colapsado()) {
-          <a routerLink="/"><img src="/images/isotipo-ventra.svg" alt="Ventra" class="h-9 w-9" /></a>
+          <a routerLink="/"><img src="/images/isotipo-ventra.svg" alt="Ventra" class="h-10 w-10" /></a>
         } @else {
           <a routerLink="/">
-            <img src="/images/logo-ventra.svg" alt="Ventra" class="h-12 dark:hidden" />
-            <img src="/images/logo-ventra-blanco.svg" alt="Ventra" class="hidden h-12 dark:block" />
+            <img src="/images/logo-ventra.svg" alt="Ventra" class="h-14 dark:hidden" />
+            <img src="/images/logo-ventra-blanco.svg" alt="Ventra" class="hidden h-14 dark:block" />
           </a>
         }
       </div>

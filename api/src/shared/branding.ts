@@ -12,12 +12,13 @@ export const VENTRA_GRAY_LIGHT = '#E5E7EB';
 export const VENTRA_BG_SOFT = '#F9FAFB';
 export const VENTRA_BG_KPI = '#F3F4F6';
 
-export const VENTRA_LOGO_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 110">
-  <rect x="8" y="19" width="72" height="72" rx="18" fill="#465FFF"/>
-  <path d="M26 48 L41 70 L64 36" fill="none" stroke="#FFFFFF" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>
-  <circle cx="64" cy="36" r="4.5" fill="#FFFFFF"/>
-  <text x="96" y="66" font-family="Helvetica" font-size="46" font-weight="bold" fill="#111827">ventra</text>
-  <text x="98" y="88" font-family="Helvetica" font-size="14" letter-spacing="2" fill="#6B7280">BY FHAN LABS</text>
+export const VENTRA_LOGO_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 380 96">
+  <rect x="4" y="10" width="76" height="76" rx="19" fill="#465FFF"/>
+  <rect x="22" y="56" width="11" height="18" rx="5.5" fill="#FFFFFF" opacity="0.75"/>
+  <rect x="37" y="42" width="11" height="32" rx="5.5" fill="#FFFFFF" opacity="0.9"/>
+  <rect x="52" y="26" width="11" height="48" rx="5.5" fill="#FFFFFF"/>
+  <text x="96" y="62" font-family="Helvetica" font-size="52" font-weight="bold" fill="#111827">ventra</text>
+  <text x="99" y="86" font-family="Helvetica" font-size="14" letter-spacing="2.5" fill="#6B7280">BY FHAN LABS</text>
 </svg>`;
 
 /** Formatea un monto entero CLP: 1234567 -> "$1.234.567" */
