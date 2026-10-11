@@ -6,6 +6,7 @@ import {
   Get,
   NotFoundException,
   Param,
+  Patch,
   Post,
   Query,
   UploadedFile,
@@ -109,6 +110,38 @@ export class PurchaseDocsController {
         amount: body.amount && !isNaN(Number(body.amount)) ? Math.round(Number(body.amount)) : null,
         note: body.note?.trim() || null,
         imageUrl: `/uploads/docs/${filename}`,
+      },
+    });
+  }
+
+  /** Edita los datos del documento (la foto no cambia). */
+  @Roles('ADMIN')
+  @Patch(':id')
+  async update(
+    @CurrentUser() user: JwtUser,
+    @Param('id') id: string,
+    @Body()
+    body: {
+      type?: string;
+      supplier?: string;
+      folio?: string;
+      docDate?: string;
+      amount?: number;
+      note?: string;
+    },
+  ) {
+    await this.get(user, id);
+    if (body.type && body.type !== 'GUIA' && body.type !== 'FACTURA')
+      throw new BadRequestException('type debe ser GUIA o FACTURA');
+    return this.prisma.purchaseDoc.update({
+      where: { id },
+      data: {
+        type: body.type as DocType | undefined,
+        supplier: body.supplier !== undefined ? body.supplier?.trim() || null : undefined,
+        folio: body.folio !== undefined ? body.folio?.trim() || null : undefined,
+        docDate: body.docDate !== undefined ? (body.docDate ? new Date(body.docDate) : null) : undefined,
+        amount: body.amount !== undefined ? (body.amount != null && !isNaN(Number(body.amount)) ? Math.round(Number(body.amount)) : null) : undefined,
+        note: body.note !== undefined ? body.note?.trim() || null : undefined,
       },
     });
   }

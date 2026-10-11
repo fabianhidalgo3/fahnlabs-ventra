@@ -122,6 +122,79 @@ export interface PurchaseDoc {
         (cellClicked)="onCell($event)" />
     }
 
+    @if (det.abierto && det.doc; as d) {
+      <div class="fixed inset-0 z-[100] flex items-center justify-center p-4">
+        <div class="absolute inset-0 bg-gray-900/60 backdrop-blur-sm" (click)="det.abierto = false"></div>
+        <div class="relative flex max-h-[92vh] w-full max-w-3xl flex-col rounded-2xl border border-gray-200 bg-white p-5 shadow-xl dark:border-gray-800 dark:bg-gray-900">
+          <button (click)="det.abierto = false" aria-label="Cerrar"
+            class="absolute right-3 top-3 flex h-8 w-8 items-center justify-center rounded-full text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-800">✕</button>
+          <div class="mb-3 flex items-center gap-2 pr-8">
+            <h3 class="text-base font-semibold text-gray-900 dark:text-white">
+              {{ d.type === 'GUIA' ? 'Guía de despacho' : 'Factura' }}{{ d.folio ? ' #' + d.folio : '' }}
+            </h3>
+            <span class="rounded-full px-2.5 py-0.5 text-xs font-medium" [class]="badgeTipo(d)">{{ d.type === 'GUIA' ? 'Guía' : 'Factura' }}</span>
+            <span class="text-xs text-gray-400">registrada el {{ d.createdAt | date: 'dd/MM/yyyy HH:mm' }}</span>
+          </div>
+
+          <div class="grid min-h-0 flex-1 gap-5 overflow-y-auto md:grid-cols-2">
+            <!-- Foto -->
+            <a [href]="api.fileUrl(d.imageUrl)" target="_blank" class="block">
+              <img [src]="api.fileUrl(d.imageUrl)" [alt]="d.folio ?? d.type"
+                class="max-h-[60vh] w-full rounded-xl border border-gray-200 object-contain dark:border-gray-700" />
+            </a>
+            <!-- Datos -->
+            <div class="space-y-3">
+              <div>
+                <label class="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">Tipo</label>
+                <select [(ngModel)]="detForm.type" [disabled]="!auth.isAdmin" class="h-11 w-full rounded-lg border border-gray-300 bg-white px-3 text-sm disabled:opacity-60 dark:border-gray-700 dark:bg-gray-950 dark:text-white/90">
+                  <option value="GUIA">Guía de despacho</option>
+                  <option value="FACTURA">Factura</option>
+                </select>
+              </div>
+              <div>
+                <label class="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">Proveedor</label>
+                <input [(ngModel)]="detForm.supplier" [disabled]="!auth.isAdmin" class="h-11 w-full rounded-lg border border-gray-300 bg-white px-3 text-sm disabled:opacity-60 dark:border-gray-700 dark:bg-gray-950 dark:text-white/90" />
+              </div>
+              <div class="grid grid-cols-2 gap-3">
+                <div>
+                  <label class="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">Folio</label>
+                  <input [(ngModel)]="detForm.folio" [disabled]="!auth.isAdmin" class="h-11 w-full rounded-lg border border-gray-300 bg-white px-3 text-sm disabled:opacity-60 dark:border-gray-700 dark:bg-gray-950 dark:text-white/90" />
+                </div>
+                <div>
+                  <label class="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">Fecha documento</label>
+                  <input type="date" [(ngModel)]="detForm.docDate" [disabled]="!auth.isAdmin" class="h-11 w-full rounded-lg border border-gray-300 bg-white px-3 text-sm disabled:opacity-60 dark:border-gray-700 dark:bg-gray-950 dark:text-white/90" />
+                </div>
+              </div>
+              <div>
+                <label class="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">Monto total CLP</label>
+                <input clpMoneda type="text" inputmode="numeric" [(ngModel)]="detForm.amount" [disabled]="!auth.isAdmin" class="h-11 w-full rounded-lg border border-gray-300 bg-white px-3 text-sm font-semibold disabled:opacity-60 dark:border-gray-700 dark:bg-gray-950 dark:text-white/90" />
+              </div>
+              <div>
+                <label class="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">Nota</label>
+                <input [(ngModel)]="detForm.note" [disabled]="!auth.isAdmin" maxlength="200" class="h-11 w-full rounded-lg border border-gray-300 bg-white px-3 text-sm disabled:opacity-60 dark:border-gray-700 dark:bg-gray-950 dark:text-white/90" />
+              </div>
+              @if (detError) { <p class="text-sm text-error-600">{{ detError }}</p> }
+            </div>
+          </div>
+
+          <div class="mt-4 flex flex-wrap gap-2">
+            @if (auth.isAdmin) {
+              <button (click)="guardarDetalle()" [disabled]="detGuardando"
+                class="inline-flex h-10 items-center rounded-lg bg-brand-500 px-4 text-sm font-medium text-white hover:bg-brand-600 disabled:opacity-40">
+                {{ detGuardando ? 'Guardando…' : 'Guardar cambios' }}
+              </button>
+            }
+            <button (click)="descargar(d)"
+              class="inline-flex h-10 items-center rounded-lg border border-gray-300 bg-white px-4 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:hover:bg-gray-800">Descargar</button>
+            @if (auth.isAdmin) {
+              <button (click)="det.abierto = false; remove(d)"
+                class="inline-flex h-10 items-center rounded-lg border border-error-300 px-4 text-sm font-medium text-error-600 hover:bg-error-50 dark:hover:bg-error-500/10">Eliminar</button>
+            }
+          </div>
+        </div>
+      </div>
+    }
+
     <app-codigo-modal [abierto]="modal.abierto" [titulo]="modal.titulo" [subtitulo]="modal.subtitulo"
       [url]="modal.url" (cerrar)="modal.abierto = false" />
   `,
@@ -129,6 +202,10 @@ export interface PurchaseDoc {
 export class VentraDocumentosComponent implements OnInit {
   docs: PurchaseDoc[] = [];
   modal = { abierto: false, titulo: '', subtitulo: '', url: '' };
+  det: { abierto: boolean; doc?: PurchaseDoc } = { abierto: false };
+  detForm: { type: 'GUIA' | 'FACTURA'; supplier?: string; folio?: string; docDate?: string; amount?: number; note?: string } = { type: 'GUIA' };
+  detGuardando = false;
+  detError = '';
   vp = inject(ViewportService);
   private themeSvc = inject(ThemeService);
   theme = computed(() => ventraGridTheme(this.themeSvc.isDark()));
@@ -209,12 +286,42 @@ export class VentraDocumentosComponent implements OnInit {
   }
 
   ver(d: PurchaseDoc) {
-    this.modal = {
-      abierto: true,
-      titulo: `${d.type === 'GUIA' ? 'Guía de despacho' : 'Factura'}${d.folio ? ' #' + d.folio : ''}`,
-      subtitulo: `${d.supplier ?? 'Sin proveedor'} · ${new Date(d.docDate ?? d.createdAt).toLocaleDateString('es-CL')}${d.amount ? ' · ' + this.clp(d.amount) : ''}`,
-      url: this.api.fileUrl(d.imageUrl),
+    this.det = { abierto: true, doc: d };
+    this.detError = '';
+    this.detForm = {
+      type: d.type,
+      supplier: d.supplier ?? '',
+      folio: d.folio ?? '',
+      docDate: d.docDate ? new Date(d.docDate).toISOString().slice(0, 10) : '',
+      amount: d.amount != null ? Number(d.amount) : undefined,
+      note: d.note ?? '',
     };
+  }
+
+  guardarDetalle() {
+    if (!this.det.doc) return;
+    this.detGuardando = true;
+    this.detError = '';
+    this.http
+      .patch<PurchaseDoc>(`${API_URL}/purchase-docs/${this.det.doc.id}`, {
+        type: this.detForm.type,
+        supplier: this.detForm.supplier,
+        folio: this.detForm.folio,
+        docDate: this.detForm.docDate || null,
+        amount: this.detForm.amount ?? null,
+        note: this.detForm.note,
+      })
+      .subscribe({
+        next: (d) => {
+          this.detGuardando = false;
+          this.det.doc = d;
+          this.load();
+        },
+        error: (e) => {
+          this.detGuardando = false;
+          this.detError = e?.error?.message ?? 'Error al guardar';
+        },
+      });
   }
 
   descargar(d: PurchaseDoc) {
