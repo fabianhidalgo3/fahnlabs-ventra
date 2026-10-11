@@ -17,8 +17,8 @@ export const VENTRA_LOGO_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox=
   <rect x="22" y="56" width="11" height="18" rx="5.5" fill="#FFFFFF" opacity="0.75"/>
   <rect x="37" y="42" width="11" height="32" rx="5.5" fill="#FFFFFF" opacity="0.9"/>
   <rect x="52" y="26" width="11" height="48" rx="5.5" fill="#FFFFFF"/>
-  <text x="96" y="62" font-family="Helvetica" font-size="52" font-weight="bold" fill="#111827">ventra</text>
-  <text x="99" y="86" font-family="Helvetica" font-size="14" letter-spacing="2.5" fill="#6B7280">BY FHAN LABS</text>
+  <text x="96" y="66" font-family="Helvetica" font-size="63" font-weight="bold" fill="#111827">ven<tspan fill="#465FFF">tra</tspan></text>
+  <text x="99" y="86" font-family="Helvetica" font-size="11" letter-spacing="2" fill="#6B7280">BY FHAN LABS</text>
 </svg>`;
 
 /** Formatea un monto entero CLP: 1234567 -> "$1.234.567" */
