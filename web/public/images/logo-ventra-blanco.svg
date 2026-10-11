@@ -1,8 +1,7 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 96" fill="none">
-  <!-- Logo Ventra (dark mode): isotipo "V" ascendente + wordmark blanco -->
-  <g transform="translate(16 14) scale(1.0625)">
-    <path d="M13 15 L30 50" stroke="#465FFF" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>
-    <path d="M30 50 L51 11" stroke="#465FFF" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>
-  </g>
-  <text x="100" y="67" font-family="Outfit, 'DM Sans', 'Segoe UI', sans-serif" font-size="56" font-weight="700" letter-spacing="-1" fill="#FFFFFF" textLength="240" lengthAdjust="spacingAndGlyphs">ventra</text>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 110" role="img" aria-label="Ventra by FHAN Labs">
+  <rect x="8" y="19" width="72" height="72" rx="18" fill="#465FFF"/>
+  <path d="M26 48 L41 70 L64 36" fill="none" stroke="#FFFFFF" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="64" cy="36" r="4.5" fill="#FFFFFF"/>
+  <text x="96" y="66" font-family="Outfit, -apple-system, 'Segoe UI', sans-serif" font-size="46" font-weight="700" letter-spacing="-1" fill="#FFFFFF" textLength="196">ventra</text>
+  <text x="98" y="88" font-family="Outfit, -apple-system, 'Segoe UI', sans-serif" font-size="15" font-weight="500" letter-spacing="2.5" fill="#98A2B3" textLength="160">BY FHAN LABS</text>
 </svg>

@@ -1,6 +1,7 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ApiService, Negocio, NegocioUsuario } from '../../core/api.service';
+import { ConfirmService } from '../../core/confirm.service';
 import { PageHeaderComponent } from '../../shared/components/ventra/page-header.component';
 
 interface ApiError {
@@ -166,6 +167,7 @@ interface ApiError {
 })
 export class VentraNegociosComponent implements OnInit {
   private api = inject(ApiService);
+  private confirm = inject(ConfirmService);
 
   negocios: Negocio[] = [];
   showForm = false;
@@ -286,8 +288,17 @@ export class VentraNegociosComponent implements OnInit {
       });
   }
 
-  toggleActive(n: Negocio) {
-    if (n.active && !confirm(`¿Desactivar "${n.name}"? Sus usuarios no podrán iniciar sesión.`)) return;
+  async toggleActive(n: Negocio) {
+    if (
+      n.active &&
+      !(await this.confirm.confirmar({
+        titulo: `¿Desactivar "${n.name}"?`,
+        mensaje: 'Sus usuarios no podrán iniciar sesión.',
+        accion: 'Desactivar',
+        tono: 'peligro',
+      }))
+    )
+      return;
     this.api.updateNegocio(n.id, { active: !n.active }).subscribe({
       next: () => this.load(),
       error: (e: ApiError) => (this.errorGlobal = this.msg(e, 'Error al actualizar el negocio')),

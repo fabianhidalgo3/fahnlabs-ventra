@@ -7,6 +7,7 @@ import type { CellClickedEvent, ColDef, ICellRendererParams, RowClassRules } fro
 import { ApiService, Sale, whatsappUrl } from '../../core/api.service';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { AuthService } from '../../core/auth.service';
+import { ConfirmService } from '../../core/confirm.service';
 import { ViewportService } from '../../core/viewport.service';
 import { ventraGridTheme, GRID_TEXT } from '../../core/grid';
 import { ThemeService } from '../../core/theme.service';
@@ -166,6 +167,7 @@ export class VentraVentasComponent implements OnInit {
     public api: ApiService,
     public auth: AuthService,
     public vp: ViewportService,
+    private confirm: ConfirmService,
   ) {
     this.cols = this.buildCols();
   }
@@ -298,8 +300,13 @@ export class VentraVentasComponent implements OnInit {
     this.api.sales(this.from, this.to).subscribe((s) => (this.sales = s));
   }
 
-  void(s: Sale) {
-    if (!confirm(`¿Anular la venta N° ${s.number} por ${this.clp(s.total)}? El stock se devuelve y la boleta queda anulada.`)) return;
+  async void(s: Sale) {
+    if (!(await this.confirm.confirmar({
+      titulo: `¿Anular venta N° ${s.number}?`,
+      mensaje: `La venta por ${this.clp(s.total)} se anulará: el stock se devuelve y la boleta queda anulada.`,
+      accion: 'Anular',
+      tono: 'peligro',
+    }))) return;
     this.api.voidSale(s.id).subscribe(() => this.load());
   }
 }

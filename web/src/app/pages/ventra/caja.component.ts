@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ClpMonedaDirective } from '../../shared/directives/clp-moneda.directive';
 import { ApiService, CashSummary, CashSession } from '../../core/api.service';
+import { ConfirmService } from '../../core/confirm.service';
 import { PageHeaderComponent } from '../../shared/components/ventra/page-header.component';
 
 @Component({
@@ -164,7 +165,10 @@ export class VentraCajaComponent implements OnInit {
   note = '';
   error = '';
 
-  constructor(private api: ApiService) {}
+  constructor(
+    private api: ApiService,
+    private confirm: ConfirmService,
+  ) {}
 
   clp(n: number) {
     return '$' + Math.round(Number(n)).toLocaleString('es-CL');
@@ -211,9 +215,14 @@ export class VentraCajaComponent implements OnInit {
     });
   }
 
-  close() {
+  async close() {
     if (this.countedCash == null) return;
-    if (!confirm('¿Cerrar el turno de caja?')) return;
+    if (!(await this.confirm.confirmar({
+      titulo: '¿Cerrar el turno de caja?',
+      mensaje: `El turno se cerrará con un efectivo contado de ${this.clp(Number(this.countedCash))}.`,
+      accion: 'Cerrar turno',
+      tono: 'peligro',
+    }))) return;
     this.api.cashClose(Number(this.countedCash), this.note).subscribe({
       next: () => {
         this.countedCash = undefined;

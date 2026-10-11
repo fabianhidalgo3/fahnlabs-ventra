@@ -4,6 +4,7 @@ import { HttpClient } from '@angular/common/http';
 import { AgGridAngular } from 'ag-grid-angular';
 import type { CellClickedEvent, ColDef, ICellRendererParams } from 'ag-grid-community';
 import { API_URL } from '../../core/api.service';
+import { ConfirmService } from '../../core/confirm.service';
 import { GRID_TEXT, ventraGridTheme } from '../../core/grid';
 import { ThemeService } from '../../core/theme.service';
 import { ViewportService } from '../../core/viewport.service';
@@ -172,7 +173,10 @@ export class VentraUsuariosComponent implements OnInit {
     },
   ];
 
-  constructor(private http: HttpClient) {}
+  constructor(
+    private http: HttpClient,
+    private confirm: ConfirmService,
+  ) {}
 
   ngOnInit() {
     this.load();
@@ -230,8 +234,16 @@ export class VentraUsuariosComponent implements OnInit {
     }
   }
 
-  deactivate(u: AppUser) {
-    if (!confirm(`¿Desactivar a ${u.name}? No podrá iniciar sesión.`)) return;
+  async deactivate(u: AppUser) {
+    if (
+      !(await this.confirm.confirmar({
+        titulo: `¿Desactivar a ${u.name}?`,
+        mensaje: 'No podrá iniciar sesión.',
+        accion: 'Desactivar',
+        tono: 'peligro',
+      }))
+    )
+      return;
     this.http.delete(`${API_URL}/users/${u.id}`).subscribe(() => this.load());
   }
 

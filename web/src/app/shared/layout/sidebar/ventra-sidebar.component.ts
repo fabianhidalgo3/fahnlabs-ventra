@@ -12,7 +12,7 @@ import { NAV_LINKS, NavLink } from '../top-nav/nav-links';
   imports: [CommonModule, RouterModule, SafeHtmlPipe],
   template: `
     <aside
-      class="sticky top-0 hidden h-screen shrink-0 flex-col border-r border-gray-200 bg-white transition-all duration-200 dark:border-gray-800 dark:bg-gray-900 xl:flex"
+      class="relative sticky top-0 hidden h-screen shrink-0 flex-col border-r border-gray-200 bg-white transition-all duration-200 dark:border-gray-800 dark:bg-gray-900 xl:flex"
       [class]="colapsado() ? 'w-[72px]' : 'w-[232px]'"
     >
       <!-- Logo -->
@@ -42,15 +42,13 @@ import { NAV_LINKS, NavLink } from '../top-nav/nav-links';
         }
       </nav>
 
-      <!-- Colapsar -->
-      <button (click)="toggle()"
-        class="flex items-center gap-3 border-t border-gray-200 px-3 py-3 text-sm text-gray-400 hover:bg-gray-50 hover:text-gray-600 dark:border-gray-800 dark:hover:bg-white/[0.04] dark:hover:text-gray-300"
-        [class.justify-center]="colapsado()" [title]="colapsado() ? 'Expandir menú' : ''">
-        <svg class="h-5 w-5 shrink-0 transition-transform" [class.rotate-180]="colapsado()"
-          viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
-          <path d="m11 17-5-5 5-5"/><path d="m18 17-5-5 5-5"/>
+      <!-- Colapsar: circulito en el borde -->
+      <button (click)="toggle()" [title]="colapsado() ? 'Expandir menú' : 'Colapsar menú'"
+        class="absolute -right-3 top-[86px] z-50 flex h-6 w-6 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-400 shadow-theme-xs transition-colors hover:border-brand-300 hover:text-brand-500 dark:border-gray-700 dark:bg-gray-900 dark:hover:border-brand-500/50">
+        <svg class="h-3.5 w-3.5 transition-transform" [class.rotate-180]="colapsado()"
+          viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="m15 18-6-6 6-6"/>
         </svg>
-        @if (!colapsado()) { <span>Colapsar</span> }
       </button>
     </aside>
   `,

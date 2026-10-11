@@ -5,6 +5,7 @@ import { ClpMonedaDirective } from '../../shared/directives/clp-moneda.directive
 import { HttpClient } from '@angular/common/http';
 import { API_URL, ApiService } from '../../core/api.service';
 import { AuthService } from '../../core/auth.service';
+import { ConfirmService } from '../../core/confirm.service';
 import { PageHeaderComponent } from '../../shared/components/ventra/page-header.component';
 import { CodigoModalComponent } from '../../shared/components/ventra/codigo-modal.component';
 import { AgGridAngular } from 'ag-grid-angular';
@@ -236,6 +237,7 @@ export class VentraDocumentosComponent implements OnInit {
     private http: HttpClient,
     public api: ApiService,
     public auth: AuthService,
+    private confirm: ConfirmService,
   ) {}
 
   clp(n: number) {
@@ -289,8 +291,16 @@ export class VentraDocumentosComponent implements OnInit {
     });
   }
 
-  remove(d: PurchaseDoc) {
-    if (!confirm(`¿Eliminar ${d.type === 'GUIA' ? 'la guía' : 'la factura'} ${d.folio ?? ''}?`)) return;
+  async remove(d: PurchaseDoc) {
+    if (
+      !(await this.confirm.confirmar({
+        titulo: `¿Eliminar ${d.type === 'GUIA' ? 'la guía' : 'la factura'}${d.folio ? ` ${d.folio}` : ''}?`,
+        mensaje: 'El documento se eliminará de forma permanente.',
+        accion: 'Eliminar',
+        tono: 'peligro',
+      }))
+    )
+      return;
     this.http.delete(`${API_URL}/purchase-docs/${d.id}`).subscribe(() => this.load());
   }
 }

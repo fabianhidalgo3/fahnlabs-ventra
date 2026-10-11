@@ -5,6 +5,7 @@ import { ClpMonedaDirective } from '../../shared/directives/clp-moneda.directive
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { ApiService, Product, Category } from '../../core/api.service';
 import { AuthService } from '../../core/auth.service';
+import { ConfirmService } from '../../core/confirm.service';
 import { PageHeaderComponent } from '../../shared/components/ventra/page-header.component';
 import { CodigoModalComponent } from '../../shared/components/ventra/codigo-modal.component';
 
@@ -235,6 +236,7 @@ export class VentraProductoDetalleComponent implements OnInit {
     public auth: AuthService,
     private route: ActivatedRoute,
     private router: Router,
+    private confirm: ConfirmService,
   ) {}
 
   ngOnInit() {
@@ -353,8 +355,14 @@ export class VentraProductoDetalleComponent implements OnInit {
       });
   }
 
-  remove() {
-    if (!this.p || !confirm(`¿Desactivar "${this.p.name}"?`)) return;
+  async remove() {
+    if (!this.p) return;
+    if (!(await this.confirm.confirmar({
+      titulo: `¿Desactivar "${this.p.name}"?`,
+      mensaje: 'El producto quedará desactivado y dejará de estar disponible.',
+      accion: 'Desactivar',
+      tono: 'peligro',
+    }))) return;
     this.api.deleteProduct(this.p.id).subscribe(() => this.router.navigate(['/productos']));
   }
 }

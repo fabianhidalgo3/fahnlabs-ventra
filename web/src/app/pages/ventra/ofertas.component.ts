@@ -5,6 +5,7 @@ import { AgGridAngular } from 'ag-grid-angular';
 import type { CellClickedEvent, ColDef, ICellRendererParams } from 'ag-grid-community';
 import { ApiService, Category, Product, Promotion, PromoType } from '../../core/api.service';
 import { AuthService } from '../../core/auth.service';
+import { ConfirmService } from '../../core/confirm.service';
 import { GRID_TEXT, ventraGridTheme } from '../../core/grid';
 import { ThemeService } from '../../core/theme.service';
 import { ViewportService } from '../../core/viewport.service';
@@ -200,6 +201,7 @@ export class VentraOfertasComponent implements OnInit {
   constructor(
     public api: ApiService,
     public auth: AuthService,
+    private confirm: ConfirmService,
   ) {
     const cols: ColDef<Promotion>[] = [
       {
@@ -417,8 +419,16 @@ export class VentraOfertasComponent implements OnInit {
     this.api.updatePromotion(p.id, { active: !p.active }).subscribe(() => this.load());
   }
 
-  remove(p: Promotion) {
-    if (!confirm(`¿Eliminar definitivamente la oferta "${p.name}"? Esta acción no se puede deshacer (si solo quieres pausarla, usa Desactivar).`)) return;
+  async remove(p: Promotion) {
+    if (
+      !(await this.confirm.confirmar({
+        titulo: `¿Eliminar la oferta "${p.name}"?`,
+        mensaje: 'Se eliminará definitivamente y esta acción no se puede deshacer (si solo quieres pausarla, usa Desactivar).',
+        accion: 'Eliminar',
+        tono: 'peligro',
+      }))
+    )
+      return;
     this.api.deletePromotion(p.id).subscribe(() => this.load());
   }
 

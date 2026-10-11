@@ -12,9 +12,12 @@ export const VENTRA_GRAY_LIGHT = '#E5E7EB';
 export const VENTRA_BG_SOFT = '#F9FAFB';
 export const VENTRA_BG_KPI = '#F3F4F6';
 
-export const VENTRA_LOGO_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 96">
-  <path d="M14 32 L48 80 L96 14" fill="none" stroke="${VENTRA_BLUE}" stroke-width="15" stroke-linecap="round" stroke-linejoin="round"/>
-  <text x="116" y="75" font-family="Helvetica" font-weight="bold" font-size="60" letter-spacing="1.5" fill="${VENTRA_INK}">ventra</text>
+export const VENTRA_LOGO_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 110">
+  <rect x="8" y="19" width="72" height="72" rx="18" fill="#465FFF"/>
+  <path d="M26 48 L41 70 L64 36" fill="none" stroke="#FFFFFF" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="64" cy="36" r="4.5" fill="#FFFFFF"/>
+  <text x="96" y="66" font-family="Helvetica" font-size="46" font-weight="bold" fill="#111827">ventra</text>
+  <text x="98" y="88" font-family="Helvetica" font-size="14" letter-spacing="2" fill="#6B7280">BY FHAN LABS</text>
 </svg>`;
 
 /** Formatea un monto entero CLP: 1234567 -> "$1.234.567" */

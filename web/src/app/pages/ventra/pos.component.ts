@@ -5,6 +5,7 @@ import { ClpMonedaDirective } from '../../shared/directives/clp-moneda.directive
 import { Subscription } from 'rxjs';
 import { ApiService, Product, Category, Sale, PromoQuote, FiadoCliente, whatsappUrl } from '../../core/api.service';
 import { PosBusService } from '../../core/pos-bus.service';
+import { ConfirmService } from '../../core/confirm.service';
 
 interface CartLine {
   product: Product;
@@ -354,6 +355,7 @@ export class VentraPosComponent implements OnInit, OnDestroy {
   constructor(
     public api: ApiService,
     private posBus: PosBusService,
+    private confirm: ConfirmService,
   ) {}
 
   ngOnInit() {
@@ -446,8 +448,13 @@ export class VentraPosComponent implements OnInit, OnDestroy {
   }
 
   /** Cancela la venta en curso: limpia carrito y estado sin registrar nada. */
-  cancelarVenta() {
-    if (!confirm('¿Cancelar la venta en curso? Se vacía el carrito sin registrar nada.')) return;
+  async cancelarVenta() {
+    if (!(await this.confirm.confirmar({
+      titulo: '¿Cancelar la venta en curso?',
+      mensaje: 'Se vacía el carrito sin registrar nada.',
+      accion: 'Cancelar venta',
+      tono: 'peligro',
+    }))) return;
     this.cart = [];
     this.discount = 0;
     this.descuentoPct = undefined;

@@ -7,6 +7,7 @@ import { AgGridAngular } from 'ag-grid-angular';
 import type { CellClickedEvent, ColDef, ICellRendererParams } from 'ag-grid-community';
 import { ApiService, Product, Category } from '../../core/api.service';
 import { AuthService } from '../../core/auth.service';
+import { ConfirmService } from '../../core/confirm.service';
 import { ViewportService } from '../../core/viewport.service';
 import { ventraGridTheme, GRID_TEXT } from '../../core/grid';
 import { ThemeService } from '../../core/theme.service';
@@ -203,6 +204,7 @@ export class VentraProductosComponent implements OnInit {
     public auth: AuthService,
     public router: Router,
     public vp: ViewportService,
+    private confirm: ConfirmService,
   ) {
     this.cols = this.buildCols();
   }
@@ -411,8 +413,13 @@ export class VentraProductosComponent implements OnInit {
     }
   }
 
-  remove(p: Product) {
-    if (!confirm(`¿Desactivar "${p.name}"?`)) return;
+  async remove(p: Product) {
+    if (!(await this.confirm.confirmar({
+      titulo: `¿Desactivar "${p.name}"?`,
+      mensaje: 'El producto quedará desactivado y dejará de estar disponible.',
+      accion: 'Desactivar',
+      tono: 'peligro',
+    }))) return;
     this.api.deleteProduct(p.id).subscribe(() => this.load());
   }
 
