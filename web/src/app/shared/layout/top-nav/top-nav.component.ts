@@ -52,16 +52,15 @@ const ICONS = {
   standalone: true,
   imports: [CommonModule, RouterModule, SafeHtmlPipe],
   template: `
-    <nav class="sticky top-[73px] z-40 w-full border-b border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900">
-      <div class="mx-auto flex max-w-(--breakpoint-2xl) items-stretch gap-6 overflow-x-auto px-4 md:px-6">
+    <nav class="sticky top-[73px] z-40 w-full border-b border-gray-800 bg-gray-950">
+      <div class="mx-auto flex max-w-(--breakpoint-2xl) items-center gap-1 overflow-x-auto px-3 py-2 md:px-5">
         @for (l of links; track l.path) {
           <a [routerLink]="l.path"
-            routerLinkActive="!border-brand-500 !text-gray-900 dark:!text-white"
+            routerLinkActive="!bg-brand-500 !text-white shadow-theme-xs"
             [routerLinkActiveOptions]="{ exact: l.path === '/' }"
-            class="flex shrink-0 items-center gap-2 border-b-2 border-transparent py-3 text-sm font-medium text-gray-500 transition-colors hover:text-gray-900 dark:text-gray-400 dark:hover:text-white"
+            class="flex shrink-0 items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-gray-400 transition-colors hover:bg-white/[0.06] hover:text-white"
             #rla="routerLinkActive">
-            <span class="flex h-5 w-5 items-center justify-center" [class.text-brand-500]="rla.isActive"
-              [innerHTML]="l.icon | safeHtml"></span>{{ l.name }}
+            <span class="flex h-5 w-5 items-center justify-center" [innerHTML]="l.icon | safeHtml"></span>{{ l.name }}
           </a>
         }
       </div>

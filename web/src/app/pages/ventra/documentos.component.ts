@@ -6,6 +6,16 @@ import { HttpClient } from '@angular/common/http';
 import { API_URL, ApiService } from '../../core/api.service';
 import { AuthService } from '../../core/auth.service';
 import { PageHeaderComponent } from '../../shared/components/ventra/page-header.component';
+import { CodigoModalComponent } from '../../shared/components/ventra/codigo-modal.component';
+import { AgGridAngular } from 'ag-grid-angular';
+import type { CellClickedEvent, ColDef, ICellRendererParams } from 'ag-grid-community';
+import { ventraGridTheme, GRID_TEXT } from '../../core/grid';
+import { ThemeService } from '../../core/theme.service';
+import { ViewportService } from '../../core/viewport.service';
+import { computed, inject } from '@angular/core';
+
+const esc = (v: unknown): string =>
+  String(v ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
 
 export interface PurchaseDoc {
   id: string;
@@ -23,7 +33,7 @@ export interface PurchaseDoc {
   selector: 'app-ventra-documentos',
   standalone: true,
   imports: [CommonModule, FormsModule,
-    ClpMonedaDirective, PageHeaderComponent],
+    ClpMonedaDirective, PageHeaderComponent, CodigoModalComponent, AgGridAngular],
   template: `
     <app-page-header title="Guías y facturas" subtitle="Respaldo fotográfico de documentos de compra">
       <button (click)="showForm = !showForm" class="inline-flex h-10 items-center gap-2 rounded-lg bg-brand-500 px-4 text-sm font-medium text-white shadow-theme-xs hover:bg-brand-600 disabled:opacity-40">
@@ -75,44 +85,145 @@ export interface PurchaseDoc {
       </div>
     }
 
-    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-      @for (d of docs; track d.id) {
-        <div class="overflow-hidden rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900">
-          <a [href]="api.fileUrl(d.imageUrl)" target="_blank" class="block">
-            <img [src]="api.fileUrl(d.imageUrl)" [alt]="d.folio ?? d.type"
-              class="h-44 w-full object-cover object-top transition hover:opacity-90" loading="lazy" />
-          </a>
-          <div class="p-4">
-            <div class="mb-1 flex items-center justify-between">
-              <span class="rounded-full px-2.5 py-0.5 text-xs font-medium"
-                [class]="d.type === 'GUIA' ? 'bg-blue-light-50 text-blue-light-600 dark:bg-blue-light-500/15 dark:text-blue-light-400' : 'bg-brand-50 text-brand-600 dark:bg-brand-500/15 dark:text-brand-400'">
-                {{ d.type === 'GUIA' ? 'Guía' : 'Factura' }} {{ d.folio ? '#' + d.folio : '' }}
-              </span>
+    @if (vp.esMovil()) {
+      <div class="space-y-3">
+        @for (d of docs; track d.id) {
+          <div class="rounded-xl border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-gray-900">
+            <div class="flex items-start gap-3">
+              <img [src]="api.fileUrl(d.imageUrl)" [alt]="d.folio ?? d.type"
+                class="h-16 w-16 shrink-0 cursor-pointer rounded-lg object-cover object-top" loading="lazy" (click)="ver(d)" />
+              <div class="min-w-0 flex-1">
+                <span class="rounded-full px-2.5 py-0.5 text-xs font-medium" [class]="badgeTipo(d)">
+                  {{ d.type === 'GUIA' ? 'Guía' : 'Factura' }} {{ d.folio ? '#' + d.folio : '' }}
+                </span>
+                <p class="mt-1 truncate font-medium text-gray-800 dark:text-white/90">{{ d.supplier ?? 'Sin proveedor' }}</p>
+                <p class="text-sm text-gray-500">{{ (d.docDate ?? d.createdAt) | date: 'dd/MM/yyyy' }}
+                  @if (d.amount) { · <span class="font-semibold">{{ clp(d.amount) }}</span> }
+                </p>
+              </div>
+            </div>
+            <div class="mt-3 flex gap-2">
+              <button (click)="ver(d)" class="rounded border border-gray-300 px-2 py-1 text-xs dark:border-gray-700 dark:text-gray-300">Ver</button>
+              <button (click)="descargar(d)" class="rounded border border-gray-300 px-2 py-1 text-xs dark:border-gray-700 dark:text-gray-300">Descargar</button>
               @if (auth.isAdmin) {
-                <button (click)="remove(d)" class="text-xs text-error-500 hover:underline">Eliminar</button>
+                <button (click)="remove(d)" class="rounded border border-error-300 px-2 py-1 text-xs text-error-600">Eliminar</button>
               }
             </div>
-            <p class="truncate font-medium text-gray-800 dark:text-white/90">{{ d.supplier ?? 'Sin proveedor' }}</p>
-            <p class="text-sm text-gray-500">
-              {{ (d.docDate ?? d.createdAt) | date: 'dd/MM/yyyy' }}
-              @if (d.amount) { · <span class="font-semibold">{{ clp(d.amount) }}</span> }
-            </p>
-            @if (d.note) { <p class="mt-1 truncate text-xs text-gray-400">{{ d.note }}</p> }
           </div>
-        </div>
-      } @empty {
-        <div class="col-span-full py-10 text-center">
-          <svg class="mx-auto h-10 w-10 text-gray-300" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
-          </svg>
-          <p class="mt-2 text-sm text-gray-400">Sin documentos registrados — saca la primera foto</p>
-        </div>
-      }
-    </div>
+        } @empty {
+          <p class="py-10 text-center text-sm text-gray-400">Sin documentos registrados — saca la primera foto</p>
+        }
+      </div>
+    } @else {
+      <ag-grid-angular class="w-full" [theme]="theme()" [rowData]="docs" [columnDefs]="cols"
+        [defaultColDef]="defaultCol" domLayout="autoHeight" [rowHeight]="64" [localeText]="GRID_TEXT"
+        [pagination]="true" [paginationPageSize]="20" [paginationPageSizeSelector]="[10, 20, 50]"
+        (cellClicked)="onCell($event)" />
+    }
+
+    <app-codigo-modal [abierto]="modal.abierto" [titulo]="modal.titulo" [subtitulo]="modal.subtitulo"
+      [url]="modal.url" (cerrar)="modal.abierto = false" />
   `,
 })
 export class VentraDocumentosComponent implements OnInit {
   docs: PurchaseDoc[] = [];
+  modal = { abierto: false, titulo: '', subtitulo: '', url: '' };
+  vp = inject(ViewportService);
+  private themeSvc = inject(ThemeService);
+  theme = computed(() => ventraGridTheme(this.themeSvc.isDark()));
+  GRID_TEXT = GRID_TEXT;
+  defaultCol: ColDef = { sortable: true, resizable: true, flex: 1, minWidth: 110 };
+  cols: ColDef<PurchaseDoc>[] = [
+    {
+      headerName: 'Documento',
+      colId: 'doc',
+      minWidth: 240,
+      valueGetter: (p) => p.data?.folio ?? '',
+      cellRenderer: (p: ICellRendererParams<PurchaseDoc>) => {
+        const d = p.data!;
+        const badge = d.type === 'GUIA'
+          ? 'bg-blue-light-50 text-blue-light-600 dark:bg-blue-light-500/15 dark:text-blue-light-400'
+          : 'bg-brand-50 text-brand-600 dark:bg-brand-500/15 dark:text-brand-400';
+        return `<div class="flex items-center gap-3 py-1">
+          <img src="${esc(this.api.fileUrl(d.imageUrl))}" data-action="ver" loading="lazy"
+            class="h-12 w-12 cursor-pointer rounded-lg object-cover object-top" />
+          <span class="rounded-full px-2.5 py-0.5 text-xs font-medium ${badge}">${d.type === 'GUIA' ? 'Guía' : 'Factura'}${d.folio ? ' #' + esc(d.folio) : ''}</span>
+        </div>`;
+      },
+    },
+    {
+      headerName: 'Proveedor',
+      field: 'supplier',
+      minWidth: 180,
+      cellRenderer: (p: ICellRendererParams<PurchaseDoc>) =>
+        `<span class="font-medium text-gray-800 dark:text-white/90">${esc(p.data?.supplier ?? 'Sin proveedor')}</span>`,
+    },
+    {
+      headerName: 'Fecha',
+      colId: 'fecha',
+      valueGetter: (p) => p.data?.docDate ?? p.data?.createdAt ?? '',
+      valueFormatter: (p) => {
+        const d = new Date(p.value as string);
+        return isNaN(d.getTime()) ? '' : d.toLocaleDateString('es-CL');
+      },
+    },
+    {
+      headerName: 'Monto',
+      colId: 'monto',
+      type: 'rightAligned',
+      valueGetter: (p) => (p.data?.amount != null ? Number(p.data.amount) : null),
+      valueFormatter: (p) => (p.value != null ? this.clp(p.value as number) : '—'),
+    },
+    { headerName: 'Nota', field: 'note', minWidth: 140, valueFormatter: (p) => (p.value as string) ?? '' },
+    {
+      headerName: 'Acciones',
+      colId: 'acciones',
+      sortable: false,
+      minWidth: 220,
+      cellRenderer: (p: ICellRendererParams<PurchaseDoc>) => {
+        const botones = [
+          `<button data-action="ver" class="rounded border border-gray-300 px-2 py-1 text-xs dark:border-gray-700 dark:text-gray-300">Ver</button>`,
+          `<button data-action="descargar" class="rounded border border-gray-300 px-2 py-1 text-xs dark:border-gray-700 dark:text-gray-300">Descargar</button>`,
+        ];
+        if (this.auth.isAdmin)
+          botones.push(`<button data-action="eliminar" class="rounded border border-error-300 px-2 py-1 text-xs text-error-600">Eliminar</button>`);
+        return `<div class="flex gap-2">${botones.join('')}</div>`;
+      },
+    },
+  ];
+
+  onCell(e: CellClickedEvent<PurchaseDoc>) {
+    const accion = (e.event?.target as HTMLElement)?.closest('[data-action]')?.getAttribute('data-action');
+    const d = e.data;
+    if (!accion || !d) return;
+    if (accion === 'ver') this.ver(d);
+    else if (accion === 'descargar') this.descargar(d);
+    else if (accion === 'eliminar') this.remove(d);
+  }
+
+  badgeTipo(d: PurchaseDoc) {
+    return d.type === 'GUIA'
+      ? 'bg-blue-light-50 text-blue-light-600 dark:bg-blue-light-500/15 dark:text-blue-light-400'
+      : 'bg-brand-50 text-brand-600 dark:bg-brand-500/15 dark:text-brand-400';
+  }
+
+  ver(d: PurchaseDoc) {
+    this.modal = {
+      abierto: true,
+      titulo: `${d.type === 'GUIA' ? 'Guía de despacho' : 'Factura'}${d.folio ? ' #' + d.folio : ''}`,
+      subtitulo: `${d.supplier ?? 'Sin proveedor'} · ${new Date(d.docDate ?? d.createdAt).toLocaleDateString('es-CL')}${d.amount ? ' · ' + this.clp(d.amount) : ''}`,
+      url: this.api.fileUrl(d.imageUrl),
+    };
+  }
+
+  descargar(d: PurchaseDoc) {
+    const a = document.createElement('a');
+    a.href = this.api.fileUrl(d.imageUrl);
+    a.download = `${d.type === 'GUIA' ? 'guia' : 'factura'}${d.folio ? '-' + d.folio : ''}-${(d.supplier ?? 'documento').replace(/\s+/g, '_')}.webp`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  }
   showForm = false;
   saving = false;
   error = '';

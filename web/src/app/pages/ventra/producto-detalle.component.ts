@@ -159,6 +159,9 @@ type ProductoFull = Product & { batches?: Batch[]; priceLogs?: PriceLog[] };
                   class="h-10 rounded-lg bg-brand-500 px-4 text-sm font-medium text-white disabled:opacity-40">Guardar lote</button>
               </div>
             }
+            @if (stockSinLote() > 0 && p.batches?.length) {
+              <p class="mb-2 text-xs text-gray-400">Stock sin lote asignado: {{ stockSinLote() }} de {{ p.stock }} unidades</p>
+            }
             <table class="w-full text-sm">
               <thead>
                 <tr class="border-b border-gray-100 text-left dark:border-gray-800">
@@ -181,7 +184,10 @@ type ProductoFull = Product & { batches?: Batch[]; priceLogs?: PriceLog[] };
                     </td>
                   </tr>
                 } @empty {
-                  <tr><td colspan="4" class="py-6 text-center text-sm text-gray-400">Sin lotes registrados</td></tr>
+                  <tr><td colspan="4" class="py-6 text-center text-sm text-gray-400">
+                    Este producto no tiene lotes registrados: su stock ({{ p.stock }}) no está asociado a fechas de vencimiento.<br />
+                    @if (auth.isAdmin) { <span class="text-gray-500">Usa <strong>+ Agregar lote</strong> para controlar vencimientos.</span> }
+                  </td></tr>
                 }
               </tbody>
             </table>
@@ -266,6 +272,11 @@ export class VentraProductoDetalleComponent implements OnInit {
 
   dias(b: Batch): number {
     return Math.ceil((new Date(b.expiresAt).getTime() - Date.now()) / 86400000);
+  }
+
+  stockSinLote(): number {
+    const enLotes = (this.p?.batches ?? []).reduce((s, b) => s + b.quantity, 0);
+    return Math.max((this.p?.stock ?? 0) - enLotes, 0);
   }
 
   proxVence(): Batch | null {

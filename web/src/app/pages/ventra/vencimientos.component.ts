@@ -1,5 +1,6 @@
 import { Component, OnInit, computed, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
 import { AgGridAngular } from 'ag-grid-angular';
 import type { ColDef, ICellRendererParams } from 'ag-grid-community';
 import { ApiService, BatchAlert, whatsappUrl } from '../../core/api.service';
@@ -43,7 +44,7 @@ import { PageHeaderComponent } from '../../shared/components/ventra/page-header.
           <div class="rounded-xl border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-gray-900">
             <div class="flex items-start justify-between gap-3">
               <div class="min-w-0">
-                <p class="font-medium text-gray-800 dark:text-white/90">{{ a.product.name }}</p>
+                <p (click)="verProducto(a)" class="cursor-pointer font-medium text-gray-800 hover:text-brand-500 hover:underline dark:text-white/90">{{ a.product.name }}</p>
                 <p class="text-xs text-gray-400">Lote {{ a.lotCode }} · {{ a.quantity }} un.</p>
               </div>
               <span class="shrink-0 rounded-full px-2.5 py-0.5 text-xs font-medium" [class]="badge(a.level)">{{ label(a) }}</span>
@@ -56,6 +57,7 @@ import { PageHeaderComponent } from '../../shared/components/ventra/page-header.
       </div>
     } @else {
       <ag-grid-angular
+        (cellClicked)="onCell($event)" 
         class="w-full"
         [theme]="theme()"
         [rowData]="alerts"
@@ -92,7 +94,7 @@ export class VentraVencimientosComponent implements OnInit {
         const a = p.data;
         if (!a) return '';
         return `<div class="py-1 leading-snug">
-            <p class="font-medium text-gray-800 dark:text-white/90">${this.esc(a.product.name)}</p>
+            <p data-action="ver-producto" class="cursor-pointer font-medium text-gray-800 hover:text-brand-500 hover:underline dark:text-white/90">${this.esc(a.product.name)}</p>
             <p class="text-xs text-gray-400">${this.esc(a.product.sku)} · ${this.esc(a.product.barcode)}</p>
           </div>`;
       },
@@ -116,7 +118,8 @@ export class VentraVencimientosComponent implements OnInit {
     },
   ];
 
-  constructor(private api: ApiService) {}
+  constructor(
+    private router: Router,private api: ApiService) {}
 
   ngOnInit() {
     this.load();
@@ -138,6 +141,15 @@ export class VentraVencimientosComponent implements OnInit {
       default:
         return 'bg-success-50 text-success-600 dark:bg-success-500/15 dark:text-success-400';
     }
+  }
+
+  onCell(e: { event?: Event | null; data?: BatchAlert }) {
+    const accion = (e.event?.target as HTMLElement)?.closest('[data-action]')?.getAttribute('data-action');
+    if (accion === 'ver-producto' && e.data) this.verProducto(e.data);
+  }
+
+  verProducto(a: BatchAlert) {
+    this.router.navigate(['/productos', a.product.id]);
   }
 
   label(a: BatchAlert) {
