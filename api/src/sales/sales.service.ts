@@ -27,7 +27,7 @@ export class SalesService {
     private promotions: PromotionsService,
   ) {}
 
-  async create(input: CreateSaleInput) {
+  async create(biz: string, input: CreateSaleInput) {
     if (!input.items?.length)
       throw new BadRequestException('La venta necesita al menos un ítem');
     if (input.payment === 'FIADO' && !input.customerId)
@@ -47,9 +47,9 @@ export class SalesService {
         if (item.quantity <= 0)
           throw new BadRequestException('Cantidad inválida');
         const product = item.productId
-          ? await tx.product.findUnique({ where: { id: item.productId } })
+          ? await tx.product.findFirst({ where: { id: item.productId, businessId: biz } })
           : await tx.product.findFirst({
-              where: { OR: [{ barcode: item.barcode }, { sku: item.barcode }] },
+              where: { businessId: biz, OR: [{ barcode: item.barcode }, { sku: item.barcode }] },
             });
         if (!product)
           throw new NotFoundException(
@@ -79,7 +79,7 @@ export class SalesService {
       // Precios con IVA incluido (práctica chilena): neto = total / 1.19
       const bruto = lines.reduce((s, l) => s + l.total, 0);
       // Descuento automático por ofertas/promociones vigentes (la mejor por línea)
-      const promo = await this.promotions.computeDiscounts(
+      const promo = await this.promotions.computeDiscounts(biz, 
         lines.map((l) => ({
           productId: l.productId,
           categoryId: l.categoryId,
@@ -103,6 +103,7 @@ export class SalesService {
 
       const created = await tx.sale.create({
         data: {
+          businessId: biz,
           subtotal: neto,
           tax: iva,
           discount,
@@ -148,9 +149,10 @@ export class SalesService {
     return { ...sale.created, boleta };
   }
 
-  list(params: { from?: string; to?: string }) {
+  list(biz: string, params: { from?: string; to?: string }) {
     return this.prisma.sale.findMany({
       where: {
+        businessId: biz,
         createdAt: {
           gte: params.from ? new Date(params.from) : undefined,
           lte: params.to ? new Date(params.to + 'T23:59:59') : undefined,
@@ -162,9 +164,9 @@ export class SalesService {
     });
   }
 
-  async get(id: string) {
-    const sale = await this.prisma.sale.findUnique({
-      where: { id },
+  async get(biz: string, id: string) {
+    const sale = await this.prisma.sale.findFirst({
+      where: { id, businessId: biz },
       include: { items: { include: { product: true } }, boleta: true },
     });
     if (!sale) throw new NotFoundException('Venta no encontrada');
@@ -172,10 +174,10 @@ export class SalesService {
   }
 
   /** Anula la venta: devuelve el stock y marca la boleta como ANULADA. */
-  async void(id: string) {
+  async void(biz: string, id: string) {
     return this.prisma.$transaction(async (tx) => {
-      const sale = await tx.sale.findUnique({
-        where: { id },
+      const sale = await tx.sale.findFirst({
+        where: { id, businessId: biz },
         include: { items: true, boleta: true },
       });
       if (!sale) throw new NotFoundException('Venta no encontrada');

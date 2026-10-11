@@ -9,7 +9,8 @@ import {
   Post,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { Roles } from './auth.decorators';
+import { Roles, CurrentUser } from './auth.decorators';
+import type { JwtUser } from './auth.decorators';
 import { IsEmail, IsEnum, IsOptional, IsString, MinLength, IsBoolean } from 'class-validator';
 import { Role } from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
@@ -56,16 +57,17 @@ export class UsersController {
   constructor(private prisma: PrismaService) {}
 
   @Get()
-  list() {
-    return this.prisma.user.findMany({ select: SAFE, orderBy: { createdAt: 'asc' } });
+  list(@CurrentUser() user: JwtUser) {
+    return this.prisma.user.findMany({ where: { businessId: user.businessId }, select: SAFE, orderBy: { createdAt: 'asc' } });
   }
 
   @Post()
-  async create(@Body() dto: CreateUserDto) {
+  async create(@CurrentUser() user: JwtUser, @Body() dto: CreateUserDto) {
     const exists = await this.prisma.user.findUnique({ where: { email: dto.email } });
     if (exists) throw new BadRequestException('Ese email ya está registrado');
     return this.prisma.user.create({
       data: {
+        businessId: user.businessId,
         name: dto.name,
         email: dto.email,
         role: dto.role,
@@ -76,7 +78,9 @@ export class UsersController {
   }
 
   @Patch(':id')
-  async update(@Param('id') id: string, @Body() dto: UpdateUserDto) {
+  async update(@CurrentUser() user: JwtUser, @Param('id') id: string, @Body() dto: UpdateUserDto) {
+    const target = await this.prisma.user.findFirst({ where: { id, businessId: user.businessId } });
+    if (!target) throw new BadRequestException('Usuario no encontrado en tu negocio');
     const data: Record<string, unknown> = {};
     if (dto.name !== undefined) data.name = dto.name;
     if (dto.role !== undefined) data.role = dto.role;
@@ -86,7 +90,9 @@ export class UsersController {
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
+  async remove(@CurrentUser() user: JwtUser, @Param('id') id: string) {
+    const target = await this.prisma.user.findFirst({ where: { id, businessId: user.businessId } });
+    if (!target) throw new BadRequestException('Usuario no encontrado en tu negocio');
     return this.prisma.user.update({
       where: { id },
       data: { active: false },

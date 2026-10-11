@@ -9,21 +9,22 @@ import { PrismaService } from '../prisma/prisma.service';
 export class InventoryService {
   constructor(private prisma: PrismaService) {}
 
-  open(note?: string) {
-    return this.prisma.inventoryCount.create({ data: { note } });
+  open(biz: string, note?: string) {
+    return this.prisma.inventoryCount.create({ data: { businessId: biz, note } });
   }
 
-  list() {
+  list(biz: string) {
     return this.prisma.inventoryCount.findMany({
+      where: { businessId: biz },
       include: { _count: { select: { items: true } } },
       orderBy: { createdAt: 'desc' },
       take: 50,
     });
   }
 
-  async get(id: string) {
-    const count = await this.prisma.inventoryCount.findUnique({
-      where: { id },
+  async get(biz: string, id: string) {
+    const count = await this.prisma.inventoryCount.findFirst({
+      where: { id, businessId: biz },
       include: {
         items: {
           orderBy: { createdAt: 'desc' },
@@ -36,12 +37,12 @@ export class InventoryService {
   }
 
   /** Registra un escaneo: suma qty (default 1) al conteo del producto. */
-  async scan(countId: string, barcode: string, qty = 1) {
-    const count = await this.get(countId);
+  async scan(biz: string, countId: string, barcode: string, qty = 1) {
+    const count = await this.get(biz, countId);
     if (count.status !== 'ABIERTO')
       throw new BadRequestException('El conteo ya está cerrado');
     const product = await this.prisma.product.findFirst({
-      where: { OR: [{ barcode }, { sku: barcode }] },
+      where: { businessId: biz, OR: [{ barcode }, { sku: barcode }] },
     });
     if (!product)
       throw new NotFoundException(`Producto no encontrado: ${barcode}`);
@@ -61,8 +62,8 @@ export class InventoryService {
   }
 
   /** Cierra el conteo; si apply=true ajusta el stock real a lo contado. */
-  async close(id: string, apply: boolean) {
-    const count = await this.get(id);
+  async close(biz: string, id: string, apply: boolean) {
+    const count = await this.get(biz, id);
     if (count.status !== 'ABIERTO')
       throw new BadRequestException('El conteo ya está cerrado');
 

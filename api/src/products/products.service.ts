@@ -25,8 +25,9 @@ export class ProductsService {
     return base + check;
   }
 
-  async list(params: { search?: string; categoryId?: string; all?: boolean }) {
+  async list(biz: string, params: { search?: string; categoryId?: string; all?: boolean }) {
     const where: Prisma.ProductWhereInput = {
+      businessId: biz,
       ...(params.all ? {} : { active: true }),
       ...(params.categoryId ? { categoryId: params.categoryId } : {}),
       ...(params.search
@@ -57,18 +58,18 @@ export class ProductsService {
     });
   }
 
-  async byBarcode(barcode: string) {
+  async byBarcode(biz: string, barcode: string) {
     const p = await this.prisma.product.findFirst({
-      where: { OR: [{ barcode }, { sku: barcode }], active: true },
+      where: { businessId: biz, OR: [{ barcode }, { sku: barcode }], active: true },
       include: { category: true },
     });
     if (!p) throw new NotFoundException(`Producto no encontrado: ${barcode}`);
     return p;
   }
 
-  async get(id: string) {
-    const p = await this.prisma.product.findUnique({
-      where: { id },
+  async get(biz: string, id: string) {
+    const p = await this.prisma.product.findFirst({
+      where: { id, businessId: biz },
       include: {
         category: true,
         batches: { orderBy: { expiresAt: 'asc' } },
@@ -79,12 +80,13 @@ export class ProductsService {
     return p;
   }
 
-  async create(dto: CreateProductDto) {
+  async create(biz: string, dto: CreateProductDto) {
     const sku = dto.sku ?? 'SKU-' + randomUUID().slice(0, 8).toUpperCase();
     const barcode = dto.barcode ?? this.genBarcode();
     return this.prisma.product.create({
       // CLP: montos enteros, sin decimales
       data: {
+        businessId: biz,
         ...dto,
         price: Math.round(dto.price),
         cost: dto.cost != null ? Math.round(dto.cost) : undefined,
@@ -94,8 +96,8 @@ export class ProductsService {
     });
   }
 
-  async update(id: string, dto: UpdateProductDto) {
-    const prev = await this.get(id);
+  async update(biz: string, id: string, dto: UpdateProductDto) {
+    const prev = await this.get(biz, id);
     const updated = await this.prisma.product.update({
       where: { id },
       data: {
@@ -117,19 +119,22 @@ export class ProductsService {
     return updated;
   }
 
-  async remove(id: string) {
+  async remove(biz: string, id: string) {
+    await this.get(biz, id);
     return this.prisma.product.update({
       where: { id },
       data: { active: false },
     });
   }
 
-  async setImage(id: string, imageUrl: string) {
+  async setImage(biz: string, id: string, imageUrl: string) {
+    await this.get(biz, id);
     return this.prisma.product.update({ where: { id }, data: { imageUrl } });
   }
 
-  async bulkPercent(dto: BulkPercentDto) {
+  async bulkPercent(biz: string, dto: BulkPercentDto) {
     const where: Prisma.ProductWhereInput = {
+      businessId: biz,
       active: true,
       ...(dto.categoryId ? { categoryId: dto.categoryId } : {}),
     };
@@ -157,7 +162,7 @@ export class ProductsService {
     return { updated: products.length, percent: dto.percent };
   }
 
-  async bulkImport(buffer: Buffer, filename: string) {
+  async bulkImport(biz: string, buffer: Buffer, filename: string) {
     const rows: { key: string; price: number }[] = [];
     if (filename.toLowerCase().endsWith('.csv')) {
       const text = buffer.toString('utf8');
@@ -186,7 +191,7 @@ export class ProductsService {
     const notFound: string[] = [];
     for (const r of rows) {
       const p = await this.prisma.product.findFirst({
-        where: { OR: [{ sku: r.key }, { barcode: r.key }] },
+        where: { businessId: biz, OR: [{ sku: r.key }, { barcode: r.key }] },
       });
       if (!p) {
         notFound.push(r.key);
@@ -211,15 +216,15 @@ export class ProductsService {
     return { totalRows: rows.length, updated, notFound };
   }
 
-  listCategories() {
-    return this.prisma.category.findMany({ orderBy: { name: 'asc' } });
+  listCategories(biz: string) {
+    return this.prisma.category.findMany({ where: { businessId: biz }, orderBy: { name: 'asc' } });
   }
 
-  createCategory(name: string) {
+  createCategory(biz: string, name: string) {
     return this.prisma.category.upsert({
-      where: { name },
+      where: { businessId_name: { businessId: biz, name } },
       update: {},
-      create: { name },
+      create: { businessId: biz, name },
     });
   }
 }

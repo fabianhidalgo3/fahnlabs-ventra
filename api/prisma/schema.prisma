@@ -7,7 +7,28 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model Business {
+  id              String           @id @default(uuid())
+  name            String
+  rut             String?
+  address         String?
+  phone           String?
+  active          Boolean          @default(true)
+  createdAt       DateTime         @default(now())
+  users           User[]
+  products        Product[]
+  categories      Category[]
+  sales           Sale[]
+  customers       Customer[]
+  promotions      Promotion[]
+  purchaseDocs    PurchaseDoc[]
+  cashSessions    CashSession[]
+  inventoryCounts InventoryCount[]
+}
+
 model User {
+  business     Business @relation(fields: [businessId], references: [id])
+  businessId   String
   id           String   @id @default(uuid())
   name         String
   email        String   @unique
@@ -18,11 +39,14 @@ model User {
 }
 
 enum Role {
+  SUPERADMIN
   ADMIN
   VENDEDOR
 }
 
 model Category {
+  business   Business @relation(fields: [businessId], references: [id])
+  businessId String
   id         String      @id @default(uuid())
   name       String      @unique
   products   Product[]
@@ -31,9 +55,11 @@ model Category {
 }
 
 model Product {
+  business   Business @relation(fields: [businessId], references: [id])
+  businessId String
   id          String         @id @default(uuid())
-  sku         String         @unique
-  barcode     String         @unique
+  sku         String
+  barcode     String
   name        String
   description String?
   price       Decimal        @db.Decimal(12, 2)
@@ -52,6 +78,8 @@ model Product {
   createdAt   DateTime       @default(now())
   updatedAt   DateTime       @updatedAt
 
+  @@unique([businessId, sku])
+  @@unique([businessId, barcode])
   @@index([name])
 }
 
@@ -78,6 +106,8 @@ model PriceLog {
 }
 
 model Sale {
+  business   Business @relation(fields: [businessId], references: [id])
+  businessId String
   id         String     @id @default(uuid())
   number     Int        @unique @default(autoincrement())
   items      SaleItem[]
@@ -98,6 +128,8 @@ model Sale {
 }
 
 model CashSession {
+  business   Business @relation(fields: [businessId], references: [id])
+  businessId String
   id           String     @id @default(uuid())
   openedAt     DateTime   @default(now())
   closedAt     DateTime?
@@ -139,6 +171,8 @@ model Boleta {
 }
 
 model InventoryCount {
+  business   Business @relation(fields: [businessId], references: [id])
+  businessId String
   id        String               @id @default(uuid())
   note      String?
   status    InventoryCountStatus @default(ABIERTO)
@@ -162,6 +196,8 @@ model InventoryCountItem {
 }
 
 model PurchaseDoc {
+  business   Business @relation(fields: [businessId], references: [id])
+  businessId String
   id        String   @id @default(uuid())
   type      DocType
   supplier  String?
@@ -182,6 +218,8 @@ enum DocType {
 
 /// Oferta/promoción estándar de POS: descuento porcentual, pack a precio fijo o NxM.
 model Promotion {
+  business   Business @relation(fields: [businessId], references: [id])
+  businessId String
   id         String             @id @default(uuid())
   name       String
   type       PromoType
@@ -231,6 +269,8 @@ enum Payment {
 }
 
 model Customer {
+  business   Business @relation(fields: [businessId], references: [id])
+  businessId String
   id        String          @id @default(uuid())
   name      String
   phone     String?

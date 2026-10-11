@@ -34,8 +34,9 @@ type PromoWithProducts = Prisma.PromotionGetPayload<{
 export class PromotionsService {
   constructor(private prisma: PrismaService) {}
 
-  list() {
+  list(biz: string) {
     return this.prisma.promotion.findMany({
+      where: { businessId: biz },
       include: {
         products: { include: { product: { select: { id: true, name: true } } } },
         category: { select: { id: true, name: true } },
@@ -76,10 +77,11 @@ export class PromotionsService {
       throw new BadRequestException('La promoción necesita productos o una categoría');
   }
 
-  async create(dto: CreatePromotionDto) {
+  async create(biz: string, dto: CreatePromotionDto) {
     this.validateParams(dto, dto.type);
     return this.prisma.promotion.create({
       data: {
+        businessId: biz,
         name: dto.name.trim(),
         type: dto.type,
         percent: dto.type === 'PORCENTAJE' ? dto.percent : null,
@@ -166,10 +168,11 @@ export class PromotionsService {
   }
 
   /** Promociones activas y vigentes a la fecha actual. */
-  private async activePromotions(): Promise<PromoWithProducts[]> {
+  private async activePromotions(biz: string): Promise<PromoWithProducts[]> {
     const now = new Date();
     return this.prisma.promotion.findMany({
       where: {
+        businessId: biz,
         active: true,
         OR: [{ startsAt: null }, { startsAt: { lte: now } }],
         AND: [{ OR: [{ endsAt: null }, { endsAt: { gte: now } }] }],
@@ -218,9 +221,9 @@ export class PromotionsService {
    * Calcula el descuento automático por ofertas para un conjunto de líneas.
    * Por cada línea se aplica LA MEJOR promoción (mayor descuento).
    */
-  async computeDiscounts(lines: PromoLine[]): Promise<PromoResult> {
+  async computeDiscounts(biz: string, lines: PromoLine[]): Promise<PromoResult> {
     if (!lines.length) return { totalDiscount: 0, detail: [] };
-    const promos = await this.activePromotions();
+    const promos = await this.activePromotions(biz);
     const detail: PromoDetail[] = [];
     let totalDiscount = 0;
 
@@ -248,9 +251,9 @@ export class PromotionsService {
    * Cotiza un carrito: resuelve precios desde la BD y devuelve el descuento
    * por ofertas estimado, para que el POS lo muestre en vivo.
    */
-  async quote(items: { productId: string; quantity: number }[]) {
+  async quote(biz: string, items: { productId: string; quantity: number }[]) {
     const products = await this.prisma.product.findMany({
-      where: { id: { in: items.map((i) => i.productId) } },
+      where: { businessId: biz, id: { in: items.map((i) => i.productId) } },
       select: { id: true, price: true, categoryId: true },
     });
     const byId = new Map(products.map((p) => [p.id, p]));
@@ -266,7 +269,7 @@ export class PromotionsService {
       });
     }
     const bruto = lines.reduce((s, l) => s + l.unitPrice * l.quantity, 0);
-    const { totalDiscount, detail } = await this.computeDiscounts(lines);
+    const { totalDiscount, detail } = await this.computeDiscounts(biz, lines);
     return { bruto, promoDiscount: totalDiscount, detail };
   }
 }

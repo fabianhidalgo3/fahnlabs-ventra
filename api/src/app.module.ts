@@ -12,6 +12,7 @@ import { AssistantModule } from './assistant/assistant.module';
 import { CashModule } from './cash/cash.module';
 import { WhatsappModule } from './whatsapp/whatsapp.module';
 import { FiadoModule } from './fiado/fiado.module';
+import { NegociosModule } from './negocios/negocios.module';
 import { PromotionsModule } from './promotions/promotions.module';
 
 @Module({
@@ -29,6 +30,7 @@ import { PromotionsModule } from './promotions/promotions.module';
     CashModule,
     WhatsappModule,
     FiadoModule,
+    NegociosModule,
     PromotionsModule,
   ],
 })

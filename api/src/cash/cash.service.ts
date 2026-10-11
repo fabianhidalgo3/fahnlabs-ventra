@@ -5,30 +5,30 @@ import { PrismaService } from '../prisma/prisma.service';
 export class CashService {
   constructor(private prisma: PrismaService) {}
 
-  private openSession() {
-    return this.prisma.cashSession.findFirst({ where: { status: 'ABIERTA' } });
+  private openSession(biz: string) {
+    return this.prisma.cashSession.findFirst({ where: { status: 'ABIERTA', businessId: biz } });
   }
 
-  async open(openingCash: number) {
+  async open(biz: string, openingCash: number) {
     if (openingCash == null || isNaN(openingCash) || openingCash < 0)
       throw new BadRequestException('openingCash inválido');
-    const existing = await this.openSession();
+    const existing = await this.openSession(biz);
     if (existing)
       throw new BadRequestException(
         'Ya hay una caja abierta. Ciérrala antes de abrir otra.',
       );
     return this.prisma.cashSession.create({
-      data: { openingCash: Math.round(openingCash) },
+      data: { businessId: biz, openingCash: Math.round(openingCash) },
     });
   }
 
   /** Resumen de la caja abierta: ventas por medio de pago desde la apertura. */
-  async current() {
-    const session = await this.openSession();
+  async current(biz: string) {
+    const session = await this.openSession(biz);
     if (!session) return { session: null };
 
     const sales = await this.prisma.sale.findMany({
-      where: { createdAt: { gte: session.openedAt }, voidedAt: null },
+      where: { businessId: biz, createdAt: { gte: session.openedAt }, voidedAt: null },
       select: { payment: true, total: true },
     });
     const byPayment: Record<string, { ventas: number; total: number }> = {};
@@ -49,10 +49,10 @@ export class CashService {
     };
   }
 
-  async close(countedCash: number, note?: string) {
+  async close(biz: string, countedCash: number, note?: string) {
     if (countedCash == null || isNaN(countedCash) || countedCash < 0)
       throw new BadRequestException('countedCash inválido');
-    const summary = await this.current();
+    const summary = await this.current(biz);
     if (!summary.session) throw new BadRequestException('No hay caja abierta');
     const expected = summary.expectedCash ?? 0;
     const counted = Math.round(countedCash);
@@ -69,8 +69,9 @@ export class CashService {
     });
   }
 
-  history() {
+  history(biz: string) {
     return this.prisma.cashSession.findMany({
+      where: { businessId: biz },
       orderBy: { openedAt: 'desc' },
       take: 30,
     });

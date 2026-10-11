@@ -13,7 +13,8 @@ import {
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { PrismaService } from '../prisma/prisma.service';
-import { Roles } from '../auth/auth.decorators';
+import { Roles, CurrentUser } from '../auth/auth.decorators';
+import type { JwtUser } from '../auth/auth.decorators';
 import { Prisma, DocType } from '@prisma/client';
 import sharp from 'sharp';
 import { join } from 'path';
@@ -28,12 +29,14 @@ export class PurchaseDocsController {
 
   @Get()
   list(
+    @CurrentUser() user: JwtUser,
     @Query('type') type?: DocType,
     @Query('from') from?: string,
     @Query('to') to?: string,
     @Query('search') search?: string,
   ) {
     const where: Prisma.PurchaseDocWhereInput = {
+      businessId: user.businessId,
       ...(type ? { type } : {}),
       ...(from || to
         ? {
@@ -61,8 +64,8 @@ export class PurchaseDocsController {
   }
 
   @Get(':id')
-  async get(@Param('id') id: string) {
-    const doc = await this.prisma.purchaseDoc.findUnique({ where: { id } });
+  async get(@CurrentUser() user: JwtUser, @Param('id') id: string) {
+    const doc = await this.prisma.purchaseDoc.findFirst({ where: { id, businessId: user.businessId } });
     if (!doc) throw new NotFoundException('Documento no encontrado');
     return doc;
   }
@@ -71,6 +74,7 @@ export class PurchaseDocsController {
   @Post()
   @UseInterceptors(FileInterceptor('file'))
   async create(
+    @CurrentUser() user: JwtUser,
     @UploadedFile() file: Express.Multer.File,
     @Body()
     body: {
@@ -97,6 +101,7 @@ export class PurchaseDocsController {
 
     return this.prisma.purchaseDoc.create({
       data: {
+        businessId: user.businessId,
         type: body.type,
         supplier: body.supplier?.trim() || null,
         folio: body.folio?.trim() || null,
@@ -110,7 +115,8 @@ export class PurchaseDocsController {
 
   @Roles('ADMIN')
   @Delete(':id')
-  remove(@Param('id') id: string) {
+  async remove(@CurrentUser() user: JwtUser, @Param('id') id: string) {
+    await this.get(user, id);
     return this.prisma.purchaseDoc.delete({ where: { id } });
   }
 }

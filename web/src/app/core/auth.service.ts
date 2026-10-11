@@ -8,7 +8,9 @@ export interface SessionUser {
   sub: string;
   email: string;
   name: string;
-  role: 'ADMIN' | 'VENDEDOR';
+  role: 'SUPERADMIN' | 'ADMIN' | 'VENDEDOR';
+  businessId: string;
+  businessName: string;
 }
 
 const TOKEN_KEY = 'ventra_token';
@@ -35,7 +37,12 @@ export class AuthService {
   }
 
   get isAdmin(): boolean {
-    return this.user()?.role === 'ADMIN';
+    const role = this.user()?.role;
+    return role === 'ADMIN' || role === 'SUPERADMIN';
+  }
+
+  get isSuper(): boolean {
+    return this.user()?.role === 'SUPERADMIN';
   }
 
   login(email: string, password: string) {
@@ -82,4 +89,10 @@ export const adminGuard: CanActivateFn = () => {
   const auth = inject(AuthService);
   const router = inject(Router);
   return auth.isAdmin ? true : router.createUrlTree(['/']);
+};
+
+export const superGuard: CanActivateFn = () => {
+  const auth = inject(AuthService);
+  const router = inject(Router);
+  return auth.isSuper ? true : router.createUrlTree(['/']);
 };

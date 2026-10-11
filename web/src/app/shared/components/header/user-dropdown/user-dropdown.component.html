@@ -30,6 +30,9 @@
           </span>
         </p>
         <p class="mt-0.5 truncate text-xs text-gray-500 dark:text-gray-400">{{ auth.user()?.email }}</p>
+        @if (auth.user()?.businessName) {
+          <p class="text-xs text-gray-400">🏪 {{ auth.user()?.businessName }}</p>
+        }
       </div>
 
       @if (auth.isAdmin) {

@@ -33,10 +33,10 @@ export class BatchesService {
     });
   }
 
-  async alerts(days = 30) {
+  async alerts(biz: string, days = 30) {
     const limit = new Date(Date.now() + days * 86400000);
     const batches = await this.prisma.productBatch.findMany({
-      where: { expiresAt: { lte: limit }, quantity: { gt: 0 } },
+      where: { expiresAt: { lte: limit }, quantity: { gt: 0 }, product: { businessId: biz } },
       include: { product: { select: { id: true, name: true, sku: true, barcode: true } } },
       orderBy: { expiresAt: 'asc' },
     });

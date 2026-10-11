@@ -16,9 +16,9 @@ interface CartLine {
   standalone: true,
   imports: [CommonModule, FormsModule, ClpMonedaDirective],
   template: `
-    <div class="grid grid-cols-1 gap-4 xl:grid-cols-5">
+    <div class="grid grid-cols-1 gap-4 xl:grid-cols-5 2xl:grid-cols-7">
       <!-- ===== Catálogo (izquierda) ===== -->
-      <div class="order-2 xl:order-none xl:col-span-3 flex flex-col rounded-2xl border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-gray-900">
+      <div class="order-2 xl:order-none xl:col-span-3 2xl:col-span-5 flex flex-col rounded-2xl border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-gray-900">
         <input #scanInput [(ngModel)]="scanCode" (keydown.enter)="addByCode()" (input)="filterGrid()" autofocus
           placeholder="🔍 Escanear código o buscar producto…"
           class="mx-auto mb-3 block h-14 w-full max-w-xl rounded-xl border-2 border-brand-300 bg-white px-4 text-center text-lg focus:border-brand-500 focus:outline-none dark:bg-gray-900 dark:text-white/90" />
@@ -72,7 +72,7 @@ interface CartLine {
         </div>
 
         @if (vista === 'grilla') {
-          <div class="grid max-h-[62vh] grid-cols-2 gap-3 overflow-y-auto sm:grid-cols-3 lg:grid-cols-4">
+          <div class="grid max-h-[62vh] grid-cols-[repeat(auto-fill,minmax(168px,1fr))] gap-3 overflow-y-auto">
             @for (p of visible; track p.id) {
               <button (click)="addProduct(p)" [disabled]="p.stock <= 0"
                 class="flex flex-col items-stretch rounded-xl border border-gray-200 text-left shadow-theme-xs transition hover:border-brand-400 hover:shadow-sm hover:ring-2 hover:ring-brand-500/30 active:scale-95 disabled:opacity-40 dark:border-gray-800 dark:hover:border-brand-500">
@@ -117,7 +117,7 @@ interface CartLine {
       </div>
 
       <!-- ===== Ticket (derecha) ===== -->
-      <div class="order-1 xl:order-none xl:col-span-2 flex flex-col rounded-2xl border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-gray-900">
+      <div class="order-1 xl:order-none xl:col-span-2 2xl:col-span-2 flex flex-col rounded-2xl border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-gray-900">
         <div class="mb-3 flex items-center justify-between">
           <h3 class="text-lg font-semibold text-gray-800 dark:text-white/90">🧾 Venta actual</h3>
           @if (cart.length) {

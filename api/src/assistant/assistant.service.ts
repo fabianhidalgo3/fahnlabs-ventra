@@ -9,19 +9,19 @@ export class AssistantService {
   constructor(private prisma: PrismaService) {}
 
   /** Arma el contexto de negocio que se le pasa al modelo. */
-  private async buildContext(): Promise<string> {
+  private async buildContext(biz: string): Promise<string> {
     const hoy = new Date(new Date().toDateString());
     const hace7 = new Date(Date.now() - 7 * 86400000);
     const en15dias = new Date(Date.now() + 15 * 86400000);
 
     const [ventasHoy, ventas7d, topSemana, stockBajo, porVencer] = await Promise.all([
       this.prisma.sale.aggregate({
-        where: { createdAt: { gte: hoy }, voidedAt: null },
+        where: { businessId: biz, createdAt: { gte: hoy }, voidedAt: null },
         _count: true,
         _sum: { total: true },
       }),
       this.prisma.sale.aggregate({
-        where: { createdAt: { gte: hace7 }, voidedAt: null },
+        where: { businessId: biz, createdAt: { gte: hace7 }, voidedAt: null },
         _count: true,
         _sum: { total: true },
       }),
@@ -30,14 +30,14 @@ export class AssistantService {
         FROM "SaleItem" si
         JOIN "Sale" s ON s.id = si."saleId"
         JOIN "Product" p ON p.id = si."productId"
-        WHERE s."createdAt" >= ${hace7} AND s."voidedAt" IS NULL
+        WHERE s."createdAt" >= ${hace7} AND s."voidedAt" IS NULL AND s."businessId" = ${biz}
         GROUP BY p.name ORDER BY total DESC LIMIT 5`,
       this.prisma.product.findMany({
-        where: { active: true },
+        where: { active: true, businessId: biz },
         select: { name: true, stock: true, minStock: true },
       }),
       this.prisma.productBatch.findMany({
-        where: { expiresAt: { lte: en15dias }, quantity: { gt: 0 } },
+        where: { expiresAt: { lte: en15dias }, quantity: { gt: 0 }, product: { businessId: biz } },
         include: { product: { select: { name: true } } },
         orderBy: { expiresAt: 'asc' },
         take: 15,
@@ -86,8 +86,8 @@ export class AssistantService {
     }
   }
 
-  async ask(question: string): Promise<{ answer: string }> {
-    const context = await this.buildContext();
+  async ask(biz: string, question: string): Promise<{ answer: string }> {
+    const context = await this.buildContext(biz);
     const system = [
       'Eres el asistente del sistema de ventas Ventra (FHAN Labs), un negocio en Chile.',
       'Responde SIEMPRE en español, breve y directo (máximo 6 líneas).',
@@ -99,8 +99,8 @@ export class AssistantService {
     return { answer: await this.ollama(system, question) };
   }
 
-  async dailyBrief(): Promise<{ text: string }> {
-    const context = await this.buildContext();
+  async dailyBrief(biz: string): Promise<{ text: string }> {
+    const context = await this.buildContext(biz);
     try {
       const text = await this.ollama(
         [

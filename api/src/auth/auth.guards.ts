@@ -53,6 +53,7 @@ export class RolesGuard implements CanActivate {
     if (!roles?.length) return true;
     const { user } = ctx.switchToHttp().getRequest<{ user?: JwtUser }>();
     if (!user) return false;
+    if (user.role === 'SUPERADMIN') return true;
     if (!roles.includes(user.role))
       throw new ForbiddenException('Requiere perfil ' + roles.join(' o '));
     return true;

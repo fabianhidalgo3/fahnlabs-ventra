@@ -18,6 +18,19 @@ const BOT_PREFIX = '🤖';
 
 @Injectable()
 export class WhatsappService implements OnModuleInit, OnModuleDestroy {
+  private bizCache?: string;
+
+  /** El bot responde con los datos del negocio del primer admin del sistema. */
+  private async prismaBizLookup(): Promise<string> {
+    if (this.bizCache) return this.bizCache;
+    const admin = await this.assistant['prisma'].user.findFirst({
+      where: { role: { in: ['SUPERADMIN', 'ADMIN'] }, active: true },
+      orderBy: { createdAt: 'asc' },
+    });
+    this.bizCache = admin?.businessId ?? '';
+    return this.bizCache;
+  }
+
   private readonly logger = new Logger('WhatsApp');
   private client?: Client;
   private qr?: string;
@@ -124,7 +137,8 @@ export class WhatsappService implements OnModuleInit, OnModuleDestroy {
       if (!authorized) return;
 
       this.logger.log(`Pregunta por WhatsApp: ${body.slice(0, 80)}`);
-      const { answer } = await this.assistant.ask(body);
+      const admin = await this.prismaBizLookup();
+      const { answer } = await this.assistant.ask(admin, body);
       await msg.reply(`${BOT_PREFIX} ${answer}`);
     } catch (e) {
       this.logger.error(`Error respondiendo por WhatsApp: ${e}`);

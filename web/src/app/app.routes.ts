@@ -15,7 +15,8 @@ import { VentraCajaComponent } from './pages/ventra/caja.component';
 import { VentraFiadoComponent } from './pages/ventra/fiado.component';
 import { VentraOfertasComponent } from './pages/ventra/ofertas.component';
 import { VentraLoginComponent } from './pages/ventra/login.component';
-import { authGuard, adminGuard } from './core/auth.service';
+import { VentraNegociosComponent } from './pages/ventra/negocios.component';
+import { authGuard, adminGuard, superGuard } from './core/auth.service';
 
 export const routes: Routes = [
   {
@@ -90,6 +91,12 @@ export const routes: Routes = [
         component: VentraUsuariosComponent,
         canActivate: [adminGuard],
         title: 'Usuarios | Ventra by FHAN Labs',
+      },
+      {
+        path: 'negocios',
+        component: VentraNegociosComponent,
+        canActivate: [superGuard],
+        title: 'Negocios | Ventra by FHAN Labs',
       },
     ],
   },

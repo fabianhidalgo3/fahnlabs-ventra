@@ -45,7 +45,7 @@ import { ClpMonedaDirective } from '../../shared/directives/clp-moneda.directive
       </div>
     }
 
-    <div class="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+    <div class="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
       @for (c of clientes; track c.id) {
         <button (click)="abrir(c)"
           class="rounded-2xl border bg-white p-4 text-left transition hover:ring-2 hover:ring-brand-500/30 dark:bg-gray-900"

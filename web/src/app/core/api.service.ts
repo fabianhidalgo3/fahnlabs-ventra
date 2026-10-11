@@ -97,9 +97,57 @@ export interface Summary {
   lastSales?: Sale[];
 }
 
+export interface NegocioUsuario {
+  id: string;
+  name: string;
+  email: string;
+  role: 'SUPERADMIN' | 'ADMIN' | 'VENDEDOR';
+  active: boolean;
+}
+
+export interface Negocio {
+  id: string;
+  name: string;
+  rut?: string;
+  address?: string;
+  phone?: string;
+  active: boolean;
+  createdAt: string;
+  usuarios: NegocioUsuario[];
+  contadores: { productos: number; ventas: number };
+}
+
 @Injectable({ providedIn: 'root' })
 export class ApiService {
   constructor(private http: HttpClient) {}
+
+  // Negocios (solo SUPERADMIN)
+  negocios() {
+    return this.http.get<Negocio[]>(`${API_URL}/negocios`);
+  }
+  crearNegocio(data: {
+    name: string;
+    rut?: string;
+    address?: string;
+    phone?: string;
+    adminName: string;
+    adminEmail: string;
+    adminPassword: string;
+  }) {
+    return this.http.post<Negocio>(`${API_URL}/negocios`, data);
+  }
+  updateNegocio(
+    id: string,
+    data: { name?: string; rut?: string; address?: string; phone?: string; active?: boolean },
+  ) {
+    return this.http.patch<Negocio>(`${API_URL}/negocios/${id}`, data);
+  }
+  crearUsuarioNegocio(
+    negocioId: string,
+    data: { name: string; email: string; password: string; role: 'ADMIN' | 'VENDEDOR' },
+  ) {
+    return this.http.post<NegocioUsuario>(`${API_URL}/negocios/${negocioId}/usuarios`, data);
+  }
 
   // Productos
   products(search = '', all = false): Observable<Product[]> {

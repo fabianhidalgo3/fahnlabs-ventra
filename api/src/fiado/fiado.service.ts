@@ -6,9 +6,9 @@ export class FiadoService {
   constructor(private prisma: PrismaService) {}
 
   /** Clientes con su deuda: ventas al fiado (no anuladas) menos abonos. */
-  async clientes() {
+  async clientes(biz: string) {
     const customers = await this.prisma.customer.findMany({
-      where: { active: true },
+      where: { active: true, businessId: biz },
       include: {
         sales: { where: { payment: 'FIADO', voidedAt: null }, select: { total: true } },
         payments: { select: { amount: true } },
@@ -31,17 +31,22 @@ export class FiadoService {
     });
   }
 
-  crearCliente(data: { name: string; phone?: string; note?: string }) {
+  async crearCliente(biz: string, data: { name: string; phone?: string; note?: string }) {
     if (!data.name?.trim()) throw new BadRequestException('Nombre requerido');
+    const existe = await this.prisma.customer.findFirst({
+      where: { businessId: biz, active: true, name: { equals: data.name.trim(), mode: 'insensitive' } },
+    });
+    if (existe)
+      throw new BadRequestException(`Ya existe un cliente llamado "${existe.name}" — úsalo o diferencia el nombre (ej: apellido)`);
     return this.prisma.customer.create({
-      data: { name: data.name.trim(), phone: data.phone?.trim() || null, note: data.note?.trim() || null },
+      data: { businessId: biz, name: data.name.trim(), phone: data.phone?.trim() || null, note: data.note?.trim() || null },
     });
   }
 
   /** Detalle con movimientos cronológicos (fiados y abonos). */
-  async detalle(id: string) {
-    const c = await this.prisma.customer.findUnique({
-      where: { id },
+  async detalle(biz: string, id: string) {
+    const c = await this.prisma.customer.findFirst({
+      where: { id, businessId: biz },
       include: {
         sales: {
           where: { payment: 'FIADO', voidedAt: null },
@@ -77,15 +82,15 @@ export class FiadoService {
     return { id: c.id, name: c.name, phone: c.phone, note: c.note, fiado, abonado, deuda: fiado - abonado, movimientos };
   }
 
-  async abonar(id: string, amount: number, note?: string) {
+  async abonar(biz: string, id: string, amount: number, note?: string) {
     const monto = Math.round(Number(amount));
     if (isNaN(monto) || monto <= 0) throw new BadRequestException('Monto de abono inválido');
-    const det = await this.detalle(id);
+    const det = await this.detalle(biz, id);
     if (monto > det.deuda)
       throw new BadRequestException(`El abono ($${monto.toLocaleString('es-CL')}) supera la deuda ($${det.deuda.toLocaleString('es-CL')})`);
     await this.prisma.creditPayment.create({
       data: { customerId: id, amount: monto, note: note?.trim() || null },
     });
-    return this.detalle(id);
+    return this.detalle(biz, id);
   }
 }

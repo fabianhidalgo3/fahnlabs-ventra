@@ -26,7 +26,7 @@ export class ReportsService {
     return { start, end };
   }
 
-  async summary(from?: string, to?: string, groupBy: GroupBy = 'day') {
+  async summary(biz: string, from?: string, to?: string, groupBy: GroupBy = 'day') {
     const { start, end } = this.range(from, to);
     const rows = await this.prisma.$queryRaw<
       { bucket: Date; ventas: bigint; total: number; neto: number; iva: number }[]
@@ -37,7 +37,7 @@ export class ReportsService {
              coalesce(sum(subtotal), 0)::float AS neto,
              coalesce(sum(tax), 0)::float AS iva
       FROM "Sale"
-      WHERE "createdAt" BETWEEN ${start} AND ${end} AND "voidedAt" IS NULL
+      WHERE "createdAt" BETWEEN ${start} AND ${end} AND "voidedAt" IS NULL AND "businessId" = ${biz}
       GROUP BY bucket ORDER BY bucket`;
 
     const totals = rows.reduce(
@@ -57,12 +57,12 @@ export class ReportsService {
       FROM "SaleItem" si
       JOIN "Sale" s ON s.id = si."saleId"
       JOIN "Product" p ON p.id = si."productId"
-      WHERE s."createdAt" BETWEEN ${start} AND ${end} AND s."voidedAt" IS NULL
+      WHERE s."createdAt" BETWEEN ${start} AND ${end} AND s."voidedAt" IS NULL AND s."businessId" = ${biz}
       GROUP BY p.name ORDER BY total DESC LIMIT 10`;
 
     const byPaymentRaw = await this.prisma.sale.groupBy({
       by: ['payment'],
-      where: { createdAt: { gte: start, lte: end }, voidedAt: null },
+      where: { businessId: biz, createdAt: { gte: start, lte: end }, voidedAt: null },
       _count: true,
       _sum: { total: true },
     });
@@ -82,10 +82,11 @@ export class ReportsService {
     };
   }
 
-  async today() {
+  async today(biz: string) {
     const today = new Date().toISOString().slice(0, 10);
-    const s = await this.summary(today, today, 'day');
+    const s = await this.summary(biz, today, today, 'day');
     const lastSales = await this.prisma.sale.findMany({
+      where: { businessId: biz },
       orderBy: { createdAt: 'desc' },
       take: 10,
       include: { items: { include: { product: true } }, boleta: true },
@@ -93,10 +94,10 @@ export class ReportsService {
     return { ...s, lastSales };
   }
 
-  async exportXlsx(from?: string, to?: string): Promise<Buffer> {
+  async exportXlsx(biz: string, from?: string, to?: string): Promise<Buffer> {
     const { start, end } = this.range(from, to);
     const sales = await this.prisma.sale.findMany({
-      where: { createdAt: { gte: start, lte: end }, voidedAt: null },
+      where: { businessId: biz, createdAt: { gte: start, lte: end }, voidedAt: null },
       include: { items: { include: { product: true } }, boleta: true },
       orderBy: { createdAt: 'asc' },
     });
@@ -130,8 +131,8 @@ export class ReportsService {
     return Buffer.from(await wb.xlsx.writeBuffer());
   }
 
-  async exportPdf(from?: string, to?: string): Promise<Buffer> {
-    const s = await this.summary(from, to, 'day');
+  async exportPdf(biz: string, from?: string, to?: string): Promise<Buffer> {
+    const s = await this.summary(biz, from, to, 'day');
     const printer = new PdfPrinter({
       Helvetica: {
         normal: 'Helvetica',

@@ -8,15 +8,16 @@ import {
   Query,
 } from '@nestjs/common';
 import { BatchesService } from './batches.service';
-import { Roles } from '../auth/auth.decorators';
+import { Roles, CurrentUser } from '../auth/auth.decorators';
+import type { JwtUser } from '../auth/auth.decorators';
 
 @Controller('batches')
 export class BatchesController {
   constructor(private readonly service: BatchesService) {}
 
   @Get('alerts')
-  alerts(@Query('days') days?: string) {
-    return this.service.alerts(days ? Number(days) : 30);
+  alerts(@CurrentUser() user: JwtUser, @Query('days') days?: string) {
+    return this.service.alerts(user.businessId, days ? Number(days) : 30);
   }
 
   @Get('product/:productId')

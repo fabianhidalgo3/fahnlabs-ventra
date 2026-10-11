@@ -15,7 +15,8 @@ import {
 import { FileInterceptor } from '@nestjs/platform-express';
 import type { Response } from 'express';
 import { ProductsService } from './products.service';
-import { Roles } from '../auth/auth.decorators';
+import { Roles, CurrentUser } from '../auth/auth.decorators';
+import type { JwtUser } from '../auth/auth.decorators';
 import { CreateProductDto, UpdateProductDto, BulkPercentDto } from './dto';
 import * as bwipjs from 'bwip-js';
 import * as QRCode from 'qrcode';
@@ -31,71 +32,73 @@ export class ProductsController {
 
   @Get()
   list(
+    @CurrentUser() user: JwtUser,
     @Query('search') search?: string,
     @Query('categoryId') categoryId?: string,
     @Query('all') all?: string,
   ) {
-    return this.service.list({ search, categoryId, all: all === 'true' });
+    return this.service.list(user.businessId, { search, categoryId, all: all === 'true' });
   }
 
   @Get('categories')
-  categories() {
-    return this.service.listCategories();
+  categories(@CurrentUser() user: JwtUser) {
+    return this.service.listCategories(user.businessId);
   }
 
   @Roles('ADMIN')
   @Post('categories')
-  createCategory(@Body('name') name: string) {
+  createCategory(@CurrentUser() user: JwtUser, @Body('name') name: string) {
     if (!name?.trim()) throw new BadRequestException('name requerido');
-    return this.service.createCategory(name.trim());
+    return this.service.createCategory(user.businessId, name.trim());
   }
 
   @Get('by-barcode/:code')
-  byBarcode(@Param('code') code: string) {
-    return this.service.byBarcode(code);
+  byBarcode(@CurrentUser() user: JwtUser, @Param('code') code: string) {
+    return this.service.byBarcode(user.businessId, code);
   }
 
   @Get(':id')
-  get(@Param('id') id: string) {
-    return this.service.get(id);
+  get(@CurrentUser() user: JwtUser, @Param('id') id: string) {
+    return this.service.get(user.businessId, id);
   }
 
   @Roles('ADMIN')
   @Post()
-  create(@Body() dto: CreateProductDto) {
-    return this.service.create(dto);
+  create(@CurrentUser() user: JwtUser, @Body() dto: CreateProductDto) {
+    return this.service.create(user.businessId, dto);
   }
 
   @Roles('ADMIN')
   @Patch(':id')
-  update(@Param('id') id: string, @Body() dto: UpdateProductDto) {
-    return this.service.update(id, dto);
+  update(@CurrentUser() user: JwtUser, @Param('id') id: string, @Body() dto: UpdateProductDto) {
+    return this.service.update(user.businessId, id, dto);
   }
 
   @Roles('ADMIN')
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.service.remove(id);
+  remove(@CurrentUser() user: JwtUser, @Param('id') id: string) {
+    return this.service.remove(user.businessId, id);
   }
 
   @Roles('ADMIN')
   @Post('price-bulk')
-  bulkPercent(@Body() dto: BulkPercentDto) {
-    return this.service.bulkPercent(dto);
+  bulkPercent(@CurrentUser() user: JwtUser, @Body() dto: BulkPercentDto) {
+    return this.service.bulkPercent(user.businessId, dto);
   }
 
   @Roles('ADMIN')
   @Post('price-import')
   @UseInterceptors(FileInterceptor('file'))
-  bulkImport(@UploadedFile() file: Express.Multer.File) {
+  bulkImport(@CurrentUser() user: JwtUser, @UploadedFile() file: Express.Multer.File) {
     if (!file) throw new BadRequestException('Archivo requerido (campo file)');
-    return this.service.bulkImport(file.buffer, file.originalname);
+    return this.service.bulkImport(user.businessId, file.buffer, file.originalname);
   }
 
   @Roles('ADMIN')
   @Post(':id/image')
   @UseInterceptors(FileInterceptor('file'))
   async uploadImage(
+    @CurrentUser() user: JwtUser,
     @Param('id') id: string,
     @UploadedFile() file: Express.Multer.File,
   ) {
@@ -106,12 +109,12 @@ export class ProductsController {
       .resize(800, 800, { fit: 'inside', withoutEnlargement: true })
       .webp({ quality: 82 })
       .toFile(join(UPLOADS, 'products', filename));
-    return this.service.setImage(id, `/uploads/products/${filename}`);
+    return this.service.setImage(user.businessId, id, `/uploads/products/${filename}`);
   }
 
   @Get(':id/barcode.png')
-  async barcode(@Param('id') id: string, @Res() res: Response) {
-    const p = await this.service.get(id);
+  async barcode(@CurrentUser() user: JwtUser, @Param('id') id: string, @Res() res: Response) {
+    const p = await this.service.get(user.businessId, id);
     const png = await bwipjs.toBuffer({
       bcid: p.barcode.length === 13 ? 'ean13' : 'code128',
       text: p.barcode,
@@ -125,8 +128,8 @@ export class ProductsController {
   }
 
   @Get(':id/qr.png')
-  async qr(@Param('id') id: string, @Res() res: Response) {
-    const p = await this.service.get(id);
+  async qr(@CurrentUser() user: JwtUser, @Param('id') id: string, @Res() res: Response) {
+    const p = await this.service.get(user.businessId, id);
     const png = await QRCode.toBuffer(
       JSON.stringify({ t: 'ventra-product', barcode: p.barcode, sku: p.sku }),
       { width: 320, margin: 1 },

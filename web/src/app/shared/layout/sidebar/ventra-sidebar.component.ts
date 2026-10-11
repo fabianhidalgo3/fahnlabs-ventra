@@ -60,7 +60,9 @@ export class VentraSidebarComponent {
   colapsado = signal(localStorage.getItem('ventra_sidebar') === 'colapsado');
 
   constructor(auth: AuthService) {
-    this.links = NAV_LINKS.filter((l) => !l.adminOnly || auth.isAdmin);
+    this.links = NAV_LINKS.filter(
+      (l) => (!l.adminOnly || auth.isAdmin) && (!l.superOnly || auth.isSuper),
+    );
     if (auth.isAdmin) {
       this.links = [...this.links].sort((a, b) => (a.path === '/' ? -1 : b.path === '/' ? 1 : 0));
     }
