@@ -7,3 +7,8 @@ uploads/
 graphify-out/
 .DS_Store
 *.log
+
+*:Zone.Identifier
+.claude/
+.wwebjs_auth/
+.wwebjs_cache/
