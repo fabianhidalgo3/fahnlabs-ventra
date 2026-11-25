@@ -47,3 +47,12 @@ cd mobile && npm i && npx ng serve --port 8101
 ## Navegación del código
 
 El grafo de código se genera con `graphify update . --no-cluster` (salida en `graphify-out/graph.json`).
+
+## Configuración
+
+`api/.env` (no se versiona) define `DATABASE_URL` y los secretos de la API. La sesión de WhatsApp Web
+(`api/.wwebjs_auth/`) se crea al vincular el teléfono y tampoco se versiona.
+
+## Autor
+
+© 2026 Fabián Hidalgo · FAHNLABS. Todos los derechos reservados.
