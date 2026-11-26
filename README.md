@@ -48,6 +48,28 @@ cd mobile && npm i && npx ng serve --port 8101
 
 El grafo de código se genera con `graphify update . --no-cluster` (salida en `graphify-out/graph.json`).
 
+## Despliegue con Docker
+
+En producción corre en https://ventra.fahnlabs.cl (servidor en `/opt/ventra`, detrás del Caddy de emob).
+
+```bash
+cp .env.example .env                       # completar DB_PASSWORD, JWT_SECRET y ADMIN_*
+C="docker compose -f docker-compose.yml -f docker-compose.server.yml"   # en local basta docker-compose.yml
+$C up -d --build
+```
+
+Base nueva (vacía): el historial de migraciones no recrea todas las tablas (`Customer` se creó fuera de ellas), así
+que la primera vez se crea el esquema desde `schema.prisma` y se marcan las migraciones como aplicadas:
+
+```bash
+$C run --rm --no-deps api sh -c 'npx prisma db push --skip-generate && \
+  for m in prisma/migrations/2*/; do npx prisma migrate resolve --applied "$(basename "$m")"; done'
+$C up -d
+$C exec api node prisma/create-admin.js    # negocio + usuario SUPERADMIN desde ADMIN_* del .env
+```
+
+En el contenedor el bot de WhatsApp está desactivado (`WHATSAPP_ENABLED=false`).
+
 ## Configuración
 
 `api/.env` (no se versiona) define `DATABASE_URL` y los secretos de la API. La sesión de WhatsApp Web
