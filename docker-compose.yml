@@ -1,0 +1,48 @@
+# Ventra completo: PostgreSQL + API + panel web (nginx).
+#   cp .env.example .env   # y completa los secretos
+#   docker compose up -d --build
+#   docker compose run --rm api node prisma/create-admin.js   # admin inicial (usa ADMIN_* del .env)
+name: ventra
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ventra
+      POSTGRES_USER: ventra
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?define DB_PASSWORD in .env}
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ventra -d ventra"]
+      interval: 5s
+      retries: 20
+
+  api:
+    build: ./api
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql://ventra:${DB_PASSWORD}@db:5432/ventra?schema=public
+      JWT_SECRET: ${JWT_SECRET:?define JWT_SECRET in .env}
+      WHATSAPP_ENABLED: "false"
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
+      BUSINESS_NAME: ${BUSINESS_NAME:-}
+    volumes:
+      - uploads:/app/uploads
+    depends_on:
+      db:
+        condition: service_healthy
+
+  web:
+    build: ./web
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:${VENTRA_PORT:-8098}:80"
+    depends_on:
+      - api
+
+volumes:
+  db_data:
+  uploads:

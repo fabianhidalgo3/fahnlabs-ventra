@@ -1,0 +1,13 @@
+# Solo en el servidor: une el panel web a la red del Caddy de emob, que publica ventra.fahnlabs.cl con HTTPS
+# y redirige a ventra-web:80.
+#   docker compose -f docker-compose.yml -f docker-compose.server.yml up -d --build
+services:
+  web:
+    networks:
+      default: {}
+      emob:
+        aliases: [ventra-web]
+networks:
+  emob:
+    external: true
+    name: emob_default
