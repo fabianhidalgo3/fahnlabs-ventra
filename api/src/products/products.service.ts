@@ -220,11 +220,8 @@ export class ProductsService {
     return this.prisma.category.findMany({ where: { businessId: biz }, orderBy: { name: 'asc' } });
   }
 
-  createCategory(biz: string, name: string) {
-    return this.prisma.category.upsert({
-      where: { businessId_name: { businessId: biz, name } },
-      update: {},
-      create: { businessId: biz, name },
-    });
+  async createCategory(biz: string, name: string) {
+    const existing = await this.prisma.category.findFirst({ where: { businessId: biz, name } });
+    return existing ?? this.prisma.category.create({ data: { businessId: biz, name } });
   }
 }
